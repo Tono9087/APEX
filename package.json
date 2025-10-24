@@ -1,0 +1,17 @@
+{
+  "name": "phishing-server",
+  "version": "1.0.0",
+  "description": "Servidor de captura para hackathon de ciberseguridad",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "geoip-lite": "^1.4.7"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

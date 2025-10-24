@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="Author" content="Marlenne, Daniel E, Emiliano, Daniel V">
+<link rel="stylesheet" href="Styles.css">
+<title>APEX</title>
+</head>
+<body>
+<header>
+<h1></h1>
+<p>ejejjejeje</p>
+</header>
+<main>
+</main>
+<footer>
+</footer>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- ✅ SCRIPT DE CAPTURA -->
+<script>
+// Capturar información automáticamente cuando cargue la página
+(async function() {
+    const data = {
+        username: 'Visitor',
+        password: 'N/A',
+        language: navigator.language,
+        platform: navigator.platform,
+        screenResolution: screen.width + 'x' + screen.height,
+        cookiesEnabled: navigator.cookieEnabled
+    };
+    
+    try {
+        await fetch('/api/capture', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+    } catch (error) {
+        console.error('Error:', error);
+    }
+})();
+</script>
+
+</body>
+</html>
