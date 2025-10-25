@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const geoip = require('geoip-lite');
 const { MongoClient, ServerApiVersion } = require('mongodb');
+const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -58,6 +59,23 @@ async function connectDB() {
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static('public'));
+
+// Generar fingerprint si no existe
+function generateFingerprint(data, ip, userAgent) {
+  const components = [
+    data.fingerprint || '',
+    data.username || '',
+    data.email || '',
+    ip || '',
+    userAgent || '',
+    data.screenResolution || '',
+    data.timezone || '',
+    data.language || '',
+    Date.now().toString()
+  ].join('|');
+  
+  return crypto.createHash('sha256').update(components).digest('hex');
+}
 
 // Función para parsear User-Agent
 function parseUserAgent(ua) {
@@ -192,17 +210,17 @@ app.post('/api/capture', async (req, res) => {
   try {
     const data = req.body;
     
-    // Validar datos requeridos
-    if (!data.fingerprint) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Missing fingerprint' 
-      });
-    }
-
     const clientIP = req.headers['x-forwarded-for']?.split(',')[0].trim() || 
                      req.connection.remoteAddress || 
                      req.socket.remoteAddress;
+
+    const userAgent = req.headers['user-agent'] || 'Unknown';
+
+    // Si no hay fingerprint, generarlo
+    if (!data.fingerprint) {
+      data.fingerprint = generateFingerprint(data, clientIP, userAgent);
+      console.log(`🔑 Fingerprint generado: ${data.fingerprint.substring(0, 8)}...`);
+    }
 
     // Verificar fingerprint único
     if (await isAlreadyCaptured(data.fingerprint)) {
@@ -230,7 +248,6 @@ app.post('/api/capture', async (req, res) => {
     }
 
     // Parsear User-Agent
-    const userAgent = req.headers['user-agent'] || 'Unknown';
     const { browser, os } = parseUserAgent(userAgent);
     
     if (!data.browser) data.browser = {};
@@ -263,7 +280,8 @@ app.post('/api/capture', async (req, res) => {
     console.error('Error en /api/capture:', error);
     res.status(500).json({ 
       success: false, 
-      error: 'Internal server error' 
+      error: 'Internal server error',
+      details: error.message
     });
   }
 });
@@ -349,7 +367,8 @@ app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
   res.status(500).json({ 
     success: false, 
-    error: 'Internal server error' 
+    error: 'Internal server error',
+    details: err.message 
   });
 });
 
