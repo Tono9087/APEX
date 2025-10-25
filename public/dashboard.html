@@ -909,23 +909,81 @@
                 };
                 const color = confidenceColor[victim.incognitoMode.confidence] || '#888';
 
+                let methodsHTML = '';
+                if (victim.incognitoMode.methods && victim.incognitoMode.methods.length > 0) {
+                    methodsHTML = victim.incognitoMode.methods.map(m =>
+                        `<span style="background: rgba(255,107,107,0.15); padding: 4px 10px; border-radius: 4px; margin: 2px; display: inline-block; font-size: 12px;">${m}</span>`
+                    ).join('');
+                } else if (victim.incognitoMode.method) {
+                    methodsHTML = `<span style="background: rgba(255,107,107,0.15); padding: 4px 10px; border-radius: 4px;">${victim.incognitoMode.method}</span>`;
+                } else {
+                    methodsHTML = 'N/A';
+                }
+
+                // Tests realizados
+                let testsHTML = '';
+                if (victim.incognitoMode.tests) {
+                    const tests = victim.incognitoMode.tests;
+                    testsHTML = '<div style="margin-top: 15px; padding: 12px; background: rgba(0,0,0,0.03); border-radius: 6px; border-left: 3px solid #ff6b6b;">';
+                    testsHTML += '<strong style="color: #333; font-size: 13px;">📋 Tests Realizados:</strong><br><div style="margin-top: 8px; font-size: 12px; line-height: 1.8;">';
+
+                    if (tests.storageQuota) {
+                        const quota = tests.storageQuota.quota;
+                        const quotaMB = quota ? (quota / 1024 / 1024).toFixed(2) + ' MB' : 'N/A';
+                        const limited = tests.storageQuota.quotaLimited ? '<span style="color: #ff4444; font-weight: bold;">⚠️ LIMITADO</span>' : '<span style="color: #4CAF50;">✅ Normal</span>';
+                        testsHTML += `📦 <strong>Storage Quota:</strong> ${quotaMB} ${limited}<br>`;
+                    }
+                    if (tests.localStorage) {
+                        const status = tests.localStorage.available ? '<span style="color: #4CAF50;">✅ Disponible</span>' : '<span style="color: #ff4444; font-weight: bold;">🔒 Bloqueado</span>';
+                        testsHTML += `💾 <strong>LocalStorage:</strong> ${status}<br>`;
+                    }
+                    if (tests.indexedDB) {
+                        const status = tests.indexedDB.available ? '<span style="color: #4CAF50;">✅ Disponible</span>' : '<span style="color: #ff9800;">🔒 No disponible</span>';
+                        testsHTML += `🗄️ <strong>IndexedDB:</strong> ${status}<br>`;
+                    }
+                    if (tests.fileSystem) {
+                        const status = tests.fileSystem.blocked ? '<span style="color: #ff4444; font-weight: bold;">🔒 Bloqueado</span>' : '<span style="color: #4CAF50;">✅ Disponible</span>';
+                        testsHTML += `📁 <strong>FileSystem API:</strong> ${status}<br>`;
+                    }
+                    if (tests.serviceWorker !== undefined) {
+                        const status = tests.serviceWorker.available ? '<span style="color: #4CAF50;">✅ Disponible</span>' : '<span style="color: #ff9800;">🔒 No disponible</span>';
+                        testsHTML += `⚙️ <strong>Service Worker:</strong> ${status}<br>`;
+                    }
+                    if (tests.storageRatio) {
+                        testsHTML += `🔢 <strong>Storage Items:</strong> Session=${tests.storageRatio.sessionItems}, Local=${tests.storageRatio.localItems}<br>`;
+                    }
+
+                    testsHTML += '</div></div>';
+                }
+
                 html += `
                     <div class="details-section">
                         <h4>🕵️ Detección de Modo Incógnito/Privado</h4>
                         <div class="details-grid">
                             <div class="detail-item">
                                 <div class="detail-label">Modo Incógnito</div>
-                                <div class="detail-value">${victim.incognitoMode.isIncognito ? '⚠️ SÍ' : '✅ NO'}</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">Método de Detección</div>
-                                <div class="detail-value">${victim.incognitoMode.method || 'N/A'}</div>
+                                <div class="detail-value" style="color: ${victim.incognitoMode.isIncognito ? '#ff4444' : '#4CAF50'}; font-weight: bold; font-size: 16px;">
+                                    ${victim.incognitoMode.isIncognito ? '⚠️ SÍ DETECTADO' : '✅ NO'}
+                                </div>
                             </div>
                             <div class="detail-item">
                                 <div class="detail-label">Confianza</div>
-                                <div class="detail-value" style="color: ${color}; font-weight: bold; text-transform: uppercase;">${victim.incognitoMode.confidence || 'N/A'}</div>
+                                <div class="detail-value" style="color: ${color}; font-weight: bold; text-transform: uppercase; font-size: 14px;">
+                                    ${victim.incognitoMode.confidence || 'N/A'}
+                                </div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Indicadores</div>
+                                <div class="detail-value" style="font-weight: bold; font-size: 18px; color: ${victim.incognitoMode.indicators >= 3 ? '#ff4444' : '#666'};">
+                                    ${victim.incognitoMode.indicators || 0}
+                                </div>
                             </div>
                         </div>
+                        <div style="margin-top: 15px;">
+                            <div class="detail-label" style="margin-bottom: 8px;">Métodos de Detección:</div>
+                            <div>${methodsHTML}</div>
+                        </div>
+                        ${testsHTML}
                     </div>
                 `;
             }

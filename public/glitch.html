@@ -1122,35 +1122,160 @@ body {
         };
     }
 
-    // 🕵️ DETECCIÓN DE MODO INCÓGNITO/PRIVADO
+    // 🕵️ DETECCIÓN AVANZADA DE MODO INCÓGNITO/PRIVADO
     async function detectIncognito() {
         const detection = {
             isIncognito: false,
-            method: 'unknown',
-            confidence: 'low'
+            methods: [],
+            indicators: 0,
+            confidence: 'low',
+            tests: {}
         };
 
+        // Test 1: Storage Quota (más confiable)
         try {
             if ('storage' in navigator && 'estimate' in navigator.storage) {
-                const { quota } = await navigator.storage.estimate();
+                const { quota, usage } = await navigator.storage.estimate();
+
+                detection.tests.storageQuota = {
+                    quota: quota,
+                    usage: usage,
+                    quotaLimited: quota < 120000000
+                };
+
+                // Chrome Incognito: quota ~120MB
+                // Firefox Private: quota ~10GB pero sin persistencia
                 if (quota && quota < 120000000) {
                     detection.isIncognito = true;
-                    detection.method = 'storage-quota';
+                    detection.methods.push('Storage Quota Limitada');
+                    detection.indicators += 3;
                     detection.confidence = 'high';
-                    return detection;
+                    console.log('🔒 Modo incógnito detectado: Storage quota limitada');
                 }
             }
+        } catch (e) {
+            detection.tests.storageQuota = { error: e.message };
+        }
 
-            try {
-                localStorage.setItem('test', '1');
-                localStorage.removeItem('test');
-            } catch (e) {
-                detection.isIncognito = true;
-                detection.method = 'localstorage';
-                detection.confidence = 'high';
+        // Test 2: LocalStorage persistencia
+        try {
+            localStorage.setItem('_incognito_test', '1');
+            localStorage.removeItem('_incognito_test');
+            detection.tests.localStorage = { available: true, persistent: true };
+        } catch (e) {
+            detection.isIncognito = true;
+            detection.methods.push('LocalStorage bloqueado');
+            detection.indicators += 2;
+            if (detection.confidence === 'low') detection.confidence = 'high';
+            detection.tests.localStorage = { available: false, error: e.message };
+            console.log('🔒 Modo incógnito detectado: LocalStorage bloqueado');
+        }
+
+        // Test 3: IndexedDB
+        try {
+            if (!window.indexedDB) {
+                detection.methods.push('IndexedDB no disponible');
+                detection.indicators += 1;
+                detection.tests.indexedDB = { available: false };
+            } else {
+                detection.tests.indexedDB = { available: true };
             }
         } catch (e) {
-            detection.method = 'error';
+            detection.tests.indexedDB = { error: e.message };
+        }
+
+        // Test 4: FileSystem API (bloqueada en incógnito)
+        try {
+            if ('webkitRequestFileSystem' in window) {
+                window.webkitRequestFileSystem(
+                    window.TEMPORARY,
+                    1,
+                    () => {
+                        detection.tests.fileSystem = { available: true };
+                    },
+                    () => {
+                        detection.isIncognito = true;
+                        detection.methods.push('FileSystem bloqueado');
+                        detection.indicators += 2;
+                        detection.tests.fileSystem = { available: false, blocked: true };
+                        console.log('🔒 Modo incógnito detectado: FileSystem bloqueado');
+                    }
+                );
+            }
+        } catch (e) {
+            detection.tests.fileSystem = { error: e.message };
+        }
+
+        // Test 5: Service Worker (limitado en incógnito)
+        try {
+            if ('serviceWorker' in navigator) {
+                detection.tests.serviceWorker = { available: true };
+            } else {
+                detection.methods.push('Service Worker no disponible');
+                detection.indicators += 1;
+                detection.tests.serviceWorker = { available: false };
+            }
+        } catch (e) {
+            detection.tests.serviceWorker = { error: e.message };
+        }
+
+        // Test 6: Notifications permission (puede estar bloqueado)
+        try {
+            if ('Notification' in window && Notification.permission === 'denied') {
+                // En incógnito, puede estar permanentemente denegado
+                detection.tests.notifications = { permission: 'denied' };
+            } else if ('Notification' in window) {
+                detection.tests.notifications = { permission: Notification.permission };
+            }
+        } catch (e) {
+            detection.tests.notifications = { error: e.message };
+        }
+
+        // Test 7: Battery API (bloqueada en algunos navegadores privados)
+        try {
+            if (!('getBattery' in navigator)) {
+                detection.tests.battery = { available: false };
+                // Ya contado en privacy browser detection
+            } else {
+                detection.tests.battery = { available: true };
+            }
+        } catch (e) {
+            detection.tests.battery = { error: e.message };
+        }
+
+        // Test 8: Session Storage vs Local Storage ratio
+        try {
+            const ssLength = sessionStorage.length;
+            const lsLength = localStorage.length;
+
+            // En incógnito, sessionStorage funciona pero localStorage puede estar vacío
+            if (ssLength > 0 && lsLength === 0) {
+                detection.methods.push('Patrón SessionStorage/LocalStorage');
+                detection.indicators += 1;
+            }
+
+            detection.tests.storageRatio = {
+                sessionItems: ssLength,
+                localItems: lsLength
+            };
+        } catch (e) {
+            detection.tests.storageRatio = { error: e.message };
+        }
+
+        // Calcular nivel de confianza final
+        if (detection.indicators >= 3) {
+            detection.confidence = 'high';
+            detection.isIncognito = true;
+        } else if (detection.indicators >= 1) {
+            detection.confidence = 'medium';
+            if (detection.indicators >= 2) detection.isIncognito = true;
+        }
+
+        // Log final
+        if (detection.isIncognito) {
+            console.log(`🕵️ MODO INCÓGNITO CONFIRMADO (${detection.confidence}): ${detection.methods.join(', ')}`);
+        } else {
+            console.log('✅ Modo normal (no incógnito)');
         }
 
         return detection;
