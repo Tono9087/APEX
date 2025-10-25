@@ -1791,12 +1791,21 @@ html {
         await typeText('  • Offset UTC: ' + timezoneInfo.offset + ' minutos', 80);
         await typeText('', 80);
 
+        await typeText('> BATERÍA:', 100, [60, 30, 60]);
         if (batteryInfo.level !== 'Unknown') {
-            await typeText('> BATERÍA:', 100);
             await typeText('  • Nivel: ' + batteryInfo.level, 80);
             await typeText('  • Cargando: ' + (batteryInfo.charging ? 'SÍ' : 'NO'), 80);
-            await typeText('', 80);
+            if (batteryInfo.chargingTime !== 'N/A' && batteryInfo.charging) {
+                await typeText('  • Tiempo de carga: ' + batteryInfo.chargingTime, 80);
+            }
+            if (batteryInfo.dischargingTime !== 'N/A' && !batteryInfo.charging) {
+                await typeText('  • Tiempo restante: ' + batteryInfo.dischargingTime, 80);
+            }
+        } else {
+            await typeText('  • Estado: No disponible o bloqueado', 80);
+            await typeText('  • (Protección de privacidad activa)', 80);
         }
+        await typeText('', 80);
 
         if (networkInfo.effectiveType !== 'Unknown') {
             await typeText('> RED:', 100);

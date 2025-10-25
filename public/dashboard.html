@@ -1046,6 +1046,43 @@
                 </div>
             `;
 
+            // Battery Status
+            if (victim.battery) {
+                html += `
+                    <div class="details-section">
+                        <h4>🔋 Estado de Batería</h4>
+                        <div class="details-grid">
+                            <div class="detail-item">
+                                <div class="detail-label">Nivel</div>
+                                <div class="detail-value" style="font-weight: bold; color: ${
+                                    victim.battery.level === 'Unknown' ? '#888' :
+                                    parseInt(victim.battery.level) > 50 ? '#4CAF50' :
+                                    parseInt(victim.battery.level) > 20 ? '#ffa500' : '#ff6b6b'
+                                };">
+                                    ${victim.battery.level || 'N/A'}
+                                </div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Cargando</div>
+                                <div class="detail-value">${victim.battery.charging ? '🔌 SÍ' : '📱 NO'}</div>
+                            </div>
+                            ${victim.battery.chargingTime && victim.battery.chargingTime !== 'N/A' ? `
+                                <div class="detail-item">
+                                    <div class="detail-label">Tiempo de Carga</div>
+                                    <div class="detail-value">${victim.battery.chargingTime}</div>
+                                </div>
+                            ` : ''}
+                            ${victim.battery.dischargingTime && victim.battery.dischargingTime !== 'N/A' ? `
+                                <div class="detail-item">
+                                    <div class="detail-label">Tiempo Restante</div>
+                                    <div class="detail-value">${victim.battery.dischargingTime}</div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }
+
             // Timezone & Location
             if (victim.timezoneInfo) {
                 html += `
