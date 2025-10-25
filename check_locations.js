@@ -8,7 +8,7 @@ async function checkLocations() {
   try {
     await client.connect();
     const db = client.db('apex-db');
-    const usuarios = await db.collection('usuarios').find({}).toArray();
+    const usuarios = await db.collection('victims').find({}).toArray();
 
     console.log(`Total usuarios: ${usuarios.length}`);
 

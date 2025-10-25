@@ -75,7 +75,7 @@ async function connectDB() {
     console.log("✅ Conectado a MongoDB Atlas");
     
     const db = client.db('apex-db');
-    usuariosCollection = db.collection('usuarios');
+    usuariosCollection = db.collection('victims');
 
     // Crear índices
     await usuariosCollection.createIndex({ fingerprint: 1 }, { unique: true });
