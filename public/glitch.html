@@ -1134,7 +1134,7 @@ body {
 
         console.log('🔍 Iniciando detección de modo incógnito...');
 
-        // Test 1: Storage Quota (más confiable para Chrome/Edge)
+        // Test 1: Storage Quota + Persistence (Chrome/Edge/Firefox)
         try {
             if ('storage' in navigator && 'estimate' in navigator.storage) {
                 const { quota, usage } = await navigator.storage.estimate();
@@ -1148,13 +1148,36 @@ body {
                 console.log(`📦 Storage Quota: ${quota ? (quota / 1024 / 1024).toFixed(2) + ' MB' : 'N/A'}`);
 
                 // Chrome/Edge Incognito: quota ~120MB o menos
-                // Firefox Private: quota ~10GB pero sin persistencia
                 if (quota && quota < 120000000) {
                     detection.isIncognito = true;
                     detection.methods.push('Storage Quota Limitada (<120MB)');
                     detection.indicators += 3;
                     detection.confidence = 'high';
-                    console.log('🔒 Modo incógnito detectado: Storage quota limitada');
+                    console.log('🔒 Modo incógnito detectado: Storage quota limitada (Chrome/Edge)');
+                }
+
+                // Firefox Private: Verifica si el storage es persistente
+                if ('persist' in navigator.storage) {
+                    try {
+                        const isPersisted = await navigator.storage.persist();
+                        const persisted = await navigator.storage.persisted();
+
+                        detection.tests.storageQuota.persisted = persisted;
+                        detection.tests.storageQuota.persistAllowed = isPersisted;
+
+                        console.log(`💾 Storage Persistente: ${persisted}`);
+
+                        // En Firefox Private, persisted = false
+                        if (!persisted && quota && quota >= 10000000000) {
+                            detection.isIncognito = true;
+                            detection.methods.push('Storage No Persistente (Firefox Private)');
+                            detection.indicators += 3;
+                            detection.confidence = 'high';
+                            console.log('🔒 Modo incógnito detectado: Storage no persistente (Firefox)');
+                        }
+                    } catch (e) {
+                        console.log('⚠️ No se pudo verificar persistencia:', e.message);
+                    }
                 }
             } else {
                 console.log('⚠️ Storage API no disponible');
@@ -1211,7 +1234,7 @@ body {
             detection.tests.indexedDB = { error: e.message };
         }
 
-        // Test 4: FileSystem API (bloqueada en incógnito)
+        // Test 4: FileSystem API (bloqueada en incógnito - Chrome/Safari)
         try {
             if ('webkitRequestFileSystem' in window) {
                 window.webkitRequestFileSystem(
@@ -1219,6 +1242,7 @@ body {
                     1,
                     () => {
                         detection.tests.fileSystem = { available: true };
+                        console.log('✅ FileSystem disponible');
                     },
                     () => {
                         detection.isIncognito = true;
@@ -1228,9 +1252,26 @@ body {
                         console.log('🔒 Modo incógnito detectado: FileSystem bloqueado');
                     }
                 );
+            } else {
+                console.log('ℹ️ FileSystem API no disponible (probablemente Firefox)');
+                detection.tests.fileSystem = { available: false, notSupported: true };
             }
         } catch (e) {
+            console.log('❌ Error en FileSystem:', e.message);
             detection.tests.fileSystem = { error: e.message };
+        }
+
+        // Test 4b: Verificar requestStorageAccess (Firefox específico)
+        if (navigator.userAgent.includes('Firefox')) {
+            try {
+                if ('requestStorageAccess' in document) {
+                    // Firefox Private Mode tiene comportamiento diferente
+                    detection.tests.firefoxStorageAccess = { available: true };
+                    console.log('ℹ️ Firefox detectado - usando tests específicos');
+                }
+            } catch (e) {
+                detection.tests.firefoxStorageAccess = { error: e.message };
+            }
         }
 
         // Test 5: Service Worker (limitado en incógnito)
