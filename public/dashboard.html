@@ -365,6 +365,7 @@
 
     <div class="controls">
         <button onclick="loadData()">Actualizar</button>
+        <button onclick="reprocessLocations()" class="secondary">Reprocesar Ubicaciones</button>
         <button onclick="migrateData()" class="secondary">Migrar Datos Antiguos</button>
         <button onclick="clearData()" class="danger">Limpiar Datos</button>
         <button onclick="exportData()" class="secondary">Exportar JSON</button>
@@ -1104,6 +1105,46 @@
             if (seconds < 3600) return 'Hace ' + Math.floor(seconds / 60) + ' min';
             if (seconds < 86400) return 'Hace ' + Math.floor(seconds / 3600) + ' hrs';
             return 'Hace ' + Math.floor(seconds / 86400) + ' días';
+        }
+
+        async function reprocessLocations() {
+            const unknownCount = victimsData.filter(v =>
+                v.network?.city === 'Unknown' || v.network?.country === 'Unknown'
+            ).length;
+
+            if (unknownCount === 0) {
+                alert('No hay víctimas con ubicación Unknown para reprocesar.');
+                return;
+            }
+
+            if (confirm(`Se encontraron ${unknownCount} víctimas con ubicación Unknown.\n\n¿Quieres intentar obtener sus ubicaciones de nuevo?\n\nEsto puede tardar varios minutos.`)) {
+                try {
+                    const button = event.target;
+                    button.disabled = true;
+                    button.textContent = 'Reprocesando...';
+
+                    const response = await fetch('/api/reprocess-locations', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        alert(`Reprocesamiento completado!\n\nTotal: ${result.total}\nActualizados: ${result.updated}\nOmitidos: ${result.skipped}\nErrores: ${result.failed}`);
+                        loadData();
+                    } else {
+                        alert('Error en reprocesamiento: ' + result.error);
+                    }
+
+                    button.disabled = false;
+                    button.textContent = 'Reprocesar Ubicaciones';
+                } catch (error) {
+                    alert('Error al reprocesar ubicaciones: ' + error.message);
+                    event.target.disabled = false;
+                    event.target.textContent = 'Reprocesar Ubicaciones';
+                }
+            }
         }
 
         async function migrateData() {

