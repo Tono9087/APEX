@@ -483,19 +483,20 @@ body {
 
 <!-- Warning Box -->
 <div class="warning-box" id="warningBox">
-    <div class="skull">☠️💀☠️</div>
-    <h1>⚠️ ALERTA CRÍTICA ⚠️</h1>
-    <h1 style="color: #ffff00; text-shadow: 0 0 20px #ff0000;">SISTEMA TOTALMENTE COMPROMETIDO</h1>
-    <p style="font-size: 22px; font-weight: bold; margin: 20px 0;">🔴 ATAQUE EN PROGRESO 🔴</p>
-    <p style="font-size: 18px;">☠️ Malware instalado</p>
-    <p style="font-size: 18px;">☠️ Datos siendo robados AHORA</p>
-    <p style="font-size: 18px;">☠️ Cámara y micrófono ACTIVOS</p>
-    <p style="font-size: 18px;">☠️ Ubicación GPS rastreada</p>
-    <p style="font-size: 18px;">☠️ Contraseñas comprometidas</p>
+    <div class="skull">🔍📊🔍</div>
+    <h1>⚠️ INFORMACIÓN RECOPILADA ⚠️</h1>
+    <h1 style="color: #ffff00; text-shadow: 0 0 20px #ff0000;">TU NAVEGADOR REVELÓ DATOS</h1>
+    <p style="font-size: 22px; font-weight: bold; margin: 20px 0;">🔴 FINGERPRINTING ACTIVO 🔴</p>
+    <p style="font-size: 18px;">📊 Datos del navegador capturados</p>
+    <p style="font-size: 18px;">🖥️ Información del dispositivo recopilada</p>
+    <p style="font-size: 18px;">🌐 Configuración de red analizada</p>
+    <p style="font-size: 18px;">🕐 Zona horaria detectada</p>
+    <p style="font-size: 18px;">🔋 Estado de batería leído</p>
+    <p style="font-size: 18px;">👆 Comportamiento del usuario rastreado</p>
     <div class="countdown" id="countdown">10</div>
-    <p style="font-size: 20px; font-weight: bold; color: #ffff00;">Transmitiendo a servidor en:</p>
-    <p style="font-size: 16px; margin-top: 10px;">185.220.101.XXX:4444 (Rusia)</p>
-    <p style="font-size: 24px; font-weight: bold; margin-top: 20px; animation: shake 0.3s infinite;">⚠️ ¡NO CIERRES ESTA VENTANA! ⚠️</p>
+    <p style="font-size: 20px; font-weight: bold; color: #ffff00;">Este tipo de rastreo es usado por:</p>
+    <p style="font-size: 16px; margin-top: 10px;">Redes de publicidad, Analytics, Rastreadores web</p>
+    <p style="font-size: 24px; font-weight: bold; margin-top: 20px; animation: shake 0.3s infinite;">⚠️ ¡APRENDE CÓMO PROTEGERTE! ⚠️</p>
 </div>
 
 <script>
@@ -1618,53 +1619,122 @@ body {
     }
 
     async function showHackingSequence() {
-        // Terminal messages simulating a hack con vibraciones automáticas - MÁS ATERRADOR
-        await typeText('> Iniciando penetración...', 80);
-        await typeText('> Escaneando puertos... 21, 22, 80, 443, 3389 ABIERTOS', 100, [50, 30, 50]);
-        await typeText('> Bypass de autenticación... EXITOSO', 120);
-        await typeText('> Conectado a 192.168.1.1 (TU ROUTER)', 150, [100, 50, 100]);
-        await typeText('> Inyectando malware en red local...', 180);
-        await typeText('> [OK] Firewall DESTRUIDO', 120, [150, 70, 150]);
-        await typeText('> [OK] Antivirus DESHABILITADO', 120, [150, 70, 150]);
-        await typeText('> Acceso ROOT conseguido', 150, [200, 100, 200]);
+        // Get real data first
+        const basicInfo = getBasicInfo();
+        const networkInfo = getNetworkInfo();
+        const privacyBrowser = detectPrivacyBrowser();
+        const screenFP = getScreenFingerprint();
+        const webRTC = await detectWebRTCLeak();
+        const timezoneInfo = getTimezoneInfo();
+        const batteryInfo = await getBatteryInfo();
+        const incognitoDetection = await detectIncognito();
+
+        // Terminal messages showing ONLY real data we can actually get
+        await typeText('> Analizando conexión del navegador...', 80);
+        await typeText('> Recopilando información del dispositivo...', 100, [50, 30, 50]);
         await typeText('', 80);
-        await typeText('> ACCESO TOTAL AL SISTEMA - NIVEL ADMINISTRADOR', 120, [250, 100, 250]);
-        await typeText('', 100);
-        await typeText('> Extrayendo información sensible...', 100, [80, 40, 80]);
-        await typeText('  ✓ Cookies y sesiones: CAPTURADO', 80, 50);
-        await typeText('  ✓ Contraseñas guardadas: DESCIFRANDO... 87%... 100% ✓', 150, [100, 50, 100]);
-        await typeText('  ✓ Información bancaria: ACCEDIENDO...', 120, 50);
-        await typeText('  ✓ Correos electrónicos: DESCARGANDO...', 100, 50);
-        await typeText('  ✓ Fotos privadas: COPIANDO...', 120, [60, 30, 60]);
-        await typeText('  ✓ Historial de navegación: 2,847 URLs CAPTURADAS', 100, 50);
-        await typeText('  ✓ Ubicación GPS: LAT/LONG OBTENIDA', 100, [100, 50, 100, 50, 100]);
-        await typeText('  ✓ Contactos: 247 NÚMEROS EXTRAÍDOS', 100, 50);
-        await typeText('  ✓ Cámara web: ACCESO CONCEDIDO - GRABANDO...', 200, [200, 100, 200, 100, 200]);
-        await typeText('  ✓ Micrófono: ESCUCHANDO EN TIEMPO REAL...', 200, [200, 100, 200, 100, 200]);
+        await typeText('> === INFORMACIÓN RECOPILADA ===', 120);
+        await typeText('', 80);
+
+        await typeText('> NAVEGADOR:', 100);
+        await typeText('  • User-Agent: ' + basicInfo.browser.userAgent.substring(0, 80) + '...', 80);
+        await typeText('  • Idioma: ' + basicInfo.browser.language, 80);
+        await typeText('  • Plataforma: ' + basicInfo.device.platform, 80);
+        await typeText('  • Cookies habilitadas: ' + (basicInfo.browser.cookiesEnabled ? 'SÍ' : 'NO'), 80);
+        await typeText('  • Do Not Track: ' + basicInfo.browser.doNotTrack, 80);
+        await typeText('', 80);
+
+        await typeText('> PANTALLA:', 100);
+        await typeText('  • Resolución: ' + screenFP.resolution, 80);
+        await typeText('  • Profundidad de color: ' + screenFP.colorDepth + ' bits', 80);
+        await typeText('  • Pixel Ratio: ' + screenFP.pixelRatio, 80);
+        await typeText('  • Orientación: ' + screenFP.orientation, 80);
+        await typeText('', 80);
+
+        await typeText('> HARDWARE:', 100);
+        await typeText('  • CPU Cores: ' + (basicInfo.device.cpuCores || 'No disponible'), 80);
+        await typeText('  • Memoria: ' + basicInfo.device.memory, 80);
+        await typeText('  • Puntos táctiles: ' + basicInfo.device.maxTouchPoints, 80);
+        await typeText('', 80);
+
+        await typeText('> TIMEZONE:', 100);
+        await typeText('  • Zona horaria: ' + timezoneInfo.timezone, 80);
+        await typeText('  • Offset UTC: ' + timezoneInfo.offset + ' minutos', 80);
+        await typeText('', 80);
+
+        if (batteryInfo.level !== 'Unknown') {
+            await typeText('> BATERÍA:', 100);
+            await typeText('  • Nivel: ' + batteryInfo.level, 80);
+            await typeText('  • Cargando: ' + (batteryInfo.charging ? 'SÍ' : 'NO'), 80);
+            await typeText('', 80);
+        }
+
+        if (networkInfo.effectiveType !== 'Unknown') {
+            await typeText('> RED:', 100);
+            await typeText('  • Tipo de conexión: ' + networkInfo.effectiveType, 80);
+            if (networkInfo.downlink !== 'Unknown') {
+                await typeText('  • Velocidad: ' + networkInfo.downlink, 80);
+            }
+            await typeText('', 80);
+        }
+
+        if (webRTC && !webRTC.blocked) {
+            await typeText('> WEBRTC IP LEAK:', 100, [100, 50, 100]);
+            if (webRTC.localIP && webRTC.localIP !== 'Unknown') {
+                await typeText('  • IP Local detectada: ' + webRTC.localIP, 120);
+            }
+            if (webRTC.publicIP && webRTC.publicIP !== 'Unknown') {
+                await typeText('  • IP Pública detectada: ' + webRTC.publicIP, 120, [100, 50, 100, 50, 100]);
+            }
+            await typeText('', 80);
+        }
+
+        if (privacyBrowser.antiTrackingScore > 0) {
+            await typeText('> DETECCIONES DE PRIVACIDAD:', 100, [80, 40, 80]);
+            if (privacyBrowser.isDuckDuckGo) {
+                await typeText('  ⚠ DuckDuckGo Browser detectado', 100);
+            }
+            if (privacyBrowser.isBrave) {
+                await typeText('  ⚠ Brave Browser detectado', 100);
+            }
+            if (privacyBrowser.isTor) {
+                await typeText('  ⚠ Tor Browser detectado (confianza: ' + Math.round(privacyBrowser.torConfidence) + '%)', 120, [150, 70, 150]);
+            }
+            if (privacyBrowser.privacyFeatures.length > 0) {
+                await typeText('  • Features: ' + privacyBrowser.privacyFeatures.slice(0, 3).join(', '), 80);
+            }
+            await typeText('', 80);
+        }
+
+        if (incognitoDetection.isIncognito) {
+            await typeText('> MODO PRIVADO DETECTADO:', 120, [150, 70, 150]);
+            await typeText('  ⚠ Navegación en modo incógnito/privado', 100);
+            await typeText('  • Confianza: ' + incognitoDetection.confidence.toUpperCase(), 100);
+            if (incognitoDetection.methods.length > 0) {
+                await typeText('  • Método: ' + incognitoDetection.methods[0], 80);
+            }
+            await typeText('', 80);
+        }
+
+        await typeText('> COMPORTAMIENTO:', 100);
+        await typeText('  • Movimientos del ratón: ' + mouseMovements, 80);
+        await typeText('  • Clicks: ' + clicks, 80);
+        await typeText('  • Teclas presionadas: ' + keyPresses, 80);
+        await typeText('  • Tiempo en página: ' + Math.round((Date.now() - startTime) / 1000) + ' segundos', 80);
         await typeText('', 120);
 
         // Cambiar a modo CRÍTICO
         hackingScreen.classList.add('critical');
 
-        await typeText('> [!!!] ⚠️  ALERTA CRÍTICA ⚠️  [!!!]', 100, [300, 100, 300, 100, 300]);
-        await typeText('> SISTEMA COMPLETAMENTE COMPROMETIDO', 120, [300, 100, 300]);
-        await typeText('', 80);
-        await typeText('> Instalando RAT (Remote Access Trojan)...', 200, [200, 100, 200]);
-        await typeText('> Instalando Keylogger... ACTIVO', 180, [150, 70, 150]);
-        await typeText('> Instalando Ransomware... EN PROGRESO', 200, [250, 100, 250]);
-        await typeText('> Estableciendo backdoor permanente...', 180, [200, 100, 200]);
-        await typeText('> Agregando a botnet... ID: #' + Math.random().toString(36).substr(2, 9).toUpperCase(), 150);
+        await typeText('> [!!!] ⚠️  RECOPILACIÓN COMPLETADA ⚠️  [!!!]', 100, [300, 100, 300, 100, 300]);
         await typeText('', 120);
-        await typeText('> Enviando datos a servidor comando y control...', 200, [250, 100, 250, 100, 250]);
-        await typeText('> C2 Server: 185.220.101.XXX:4444', 120, [80, 40, 80]);
-        await typeText('> Exfiltrando 2.4 GB de datos personales...', 180);
-        await typeText('> [38%]████████░░░░░░░░░░░░', 60);
-        await typeText('> [71%]██████████████░░░░░░', 60);
-        await typeText('> [100%]████████████████████ COMPLETADO', 100, [300, 150, 300]);
+        await typeText('> NOTA: Esta información puede ser usada para:', 120, [200, 100, 200]);
+        await typeText('  • Rastreo entre sitios web (fingerprinting)', 150);
+        await typeText('  • Identificación única de tu dispositivo', 150);
+        await typeText('  • Detección de VPN/Tor/Navegadores privados', 150);
+        await typeText('  • Análisis de comportamiento del usuario', 150);
         await typeText('', 150);
-        await typeText('> [☠️] TU DISPOSITIVO HA SIDO TOTALMENTE COMPROMETIDO [☠️]', 80, [400, 150, 400, 150, 400]);
-        await typeText('> [☠️] TODOS TUS DATOS HAN SIDO ROBADOS [☠️]', 80, [400, 150, 400, 150, 400]);
-        await typeText('> [☠️] ESTÁS SIENDO MONITOREADO AHORA MISMO [☠️]', 80, [500, 200, 500, 200, 500]);
+        await typeText('> [⚠️] TODO ESTO ES POSIBLE CON JAVASCRIPT EN UN SITIO WEB [⚠️]', 80, [400, 150, 400, 150, 400]);
     }
 
     async function showCountdown() {
@@ -1780,29 +1850,29 @@ body {
     }, 1000);
 
     async function showAlerts() {
-        // Alert 1 - CRÍTICO
+        // Alert 1 - INTRO
         safeVibrate([400, 150, 400, 150, 400]);
-        alert('☠️ ALERTA CRÍTICA DE SEGURIDAD ☠️\n\n⚠️ TU SISTEMA HA SIDO COMPROMETIDO ⚠️\n\nSe ha detectado:\n• Acceso remoto no autorizado\n• Extracción masiva de datos\n• Instalación de malware\n\n¡ESTO NO ES UN SIMULACRO!');
+        alert('🔍 INFORMACIÓN DEL NAVEGADOR RECOPILADA 🔍\n\n⚠️ Este sitio web ha capturado datos sobre ti ⚠️\n\nSin instalar nada, solo con JavaScript:\n• Información del navegador\n• Características del dispositivo\n• Configuración de red\n• Zona horaria real\n• Comportamiento del usuario\n\n¿Sabías que esto es posible?');
 
-        // Alert 2 - DATOS ROBADOS
+        // Alert 2 - DATOS REALES
         safeVibrate([300, 100, 300, 100, 300, 100, 300]);
-        alert('🔓 INFORMACIÓN ROBADA:\n\n☠️ Contraseñas guardadas: 34 cuentas\n☠️ Datos bancarios: 2 tarjetas\n☠️ Ubicación en tiempo real: ACTIVA\n☠️ Cámara: GRABANDO\n☠️ Micrófono: ESCUCHANDO\n☠️ Contactos: 247 números\n☠️ Fotos privadas: 1,842 archivos\n☠️ Historial: 2,847 URLs\n\n¡TODO HA SIDO ENVIADO!');
+        alert('📊 DATOS REALMENTE CAPTURADOS:\n\n✓ User-Agent completo de tu navegador\n✓ Resolución y características de pantalla\n✓ Zona horaria y offset UTC\n✓ Idioma del navegador\n✓ CPU cores y memoria del dispositivo\n✓ Estado de la batería\n✓ Tipo de conexión\n✓ Canvas fingerprint (ID único)\n✓ Movimientos del mouse y clicks\n\nTODO esto sin pedir permisos especiales.');
 
-        // Alert 3 - SERVIDOR MALICIOSO
+        // Alert 3 - FINGERPRINTING
         safeVibrate([500, 200, 500, 200, 500]);
-        alert('📡 CONEXIÓN ACTIVA CON SERVIDOR MALICIOSO\n\n🌐 IP: 185.220.101.XXX:4444\n📍 Ubicación: Rusia\n⚡ Estado: TRANSMITIENDO\n📊 Datos enviados: 2.4 GB\n\n⏱️ Tiempo restante: 47 segundos\n\n⚠️ ¡NO CIERRES ESTA VENTANA!\n⚠️ ¡NO APAGUES EL DISPOSITIVO!\n\nEstá encriptando tus archivos...');
+        alert('🎯 ¿QUÉ ES EL FINGERPRINTING?\n\nAunque no uses cookies o estés en modo incógnito,\nlos sitios web pueden identificarte usando:\n\n• Combinación única de configuraciones\n• Características del navegador\n• Comportamiento de navegación\n• Resolución de pantalla\n• Fuentes instaladas\n• WebGL renderer\n\nEsto crea una "huella digital" única\nque te identifica entre millones de usuarios.');
 
-        // Alert 4 - RANSOMWARE
+        // Alert 4 - INCOGNITO DETECTION
         safeVibrate([600, 200, 600, 200, 600]);
-        alert('💀 RANSOMWARE DETECTADO 💀\n\nTus archivos están siendo encriptados:\n\n📁 Documentos: 🔒 BLOQUEADOS\n📁 Fotos: 🔒 BLOQUEADOS\n📁 Videos: 🔒 BLOQUEADOS\n📁 Descargas: 🔒 BLOQUEADOS\n\n💰 Rescate solicitado: $5,000 USD\n⏰ Tiempo límite: 48 horas\n\nDespués de eso, tus archivos serán:\n☠️ ELIMINADOS PERMANENTEMENTE');
+        alert('🕵️ MODO INCÓGNITO NO TE PROTEGE\n\nIncluso en modo incógnito/privado:\n\n✓ Tu IP es visible\n✓ Fingerprinting sigue funcionando\n✓ WebRTC puede revelar tu IP real\n✓ Tu ISP puede ver tu tráfico\n✓ Los sitios web rastrean tu comportamiento\n\nEl modo incógnito solo evita que tu navegador\nguarde historial LOCAL, pero no te hace anónimo.');
 
-        // Alert 5 - BACKDOOR
+        // Alert 5 - PRIVACY BROWSERS
         safeVibrate([500, 150, 500, 150, 500, 150, 500]);
-        alert('🚨 BACKDOOR INSTALADO 🚨\n\nSe ha instalado:\n\n🔴 RAT (Remote Access Trojan)\n🔴 Keylogger activo\n🔴 Screen recorder\n🔴 Acceso persistente\n\nEl atacante puede:\n✓ Ver tu pantalla en tiempo real\n✓ Controlar tu dispositivo remotamente\n✓ Robar más información\n✓ Usar tu dispositivo para atacar otros\n\nESTÁS SIENDO MONITOREADO AHORA MISMO...');
+        alert('🛡️ DETECCIÓN DE NAVEGADORES PRIVADOS\n\nEste sitio puede detectar si usas:\n\n• Tor Browser (por resolución redondeada)\n• Brave (por APIs bloqueadas)\n• DuckDuckGo (por user-agent)\n• VPN (por inconsistencias de IP/timezone)\n\nIncluso navegadores enfocados en privacidad\ntienen "huellas digitales" detectables\nbasadas en sus protecciones únicas.');
 
-        // Alert 6 - ÚLTIMO AVISO
+        // Alert 6 - EDUCACIONAL
         safeVibrate([700, 250, 700, 250, 700]);
-        alert('⚠️ ÚLTIMO AVISO - ESTO ES REAL ⚠️\n\n¿Quieres aprender cómo EVITAR que esto te pase de verdad?\n\n❌ La mayoría de las personas:\n• No verifican los URLs\n• Hacen clic en links sospechosos\n• No usan autenticación de 2 factores\n• Tienen contraseñas débiles\n\n✅ Descubre cómo protegerte...\n\n(Presiona OK para ver la verdad)');
+        alert('✅ ESTO FUE UNA DEMOSTRACIÓN EDUCATIVA\n\n📚 Lo que aprendiste:\n\n• Los sitios web pueden rastrearte sin cookies\n• El fingerprinting es muy efectivo\n• Modo incógnito NO = anonimato\n• JavaScript puede leer mucha información\n• Incluso navegadores privados son detectables\n\n🔒 Presiona OK para ver cómo protegerte...');
 
         // Continuar con el fade out
         continueToEducationalMessage();
@@ -1833,33 +1903,55 @@ body {
         document.body.innerHTML = `
         <div style="max-width: 800px; margin: 50px auto; padding: 40px; background: #fff; border-radius: 10px; box-shadow: 0 0 30px rgba(0,0,0,0.3); font-family: Arial, sans-serif;">
             <h1 style="color: #2ecc71; text-align: center; margin-bottom: 30px; font-size: clamp(24px, 5vw, 36px);">✅ ESTO FUE UNA DEMOSTRACIÓN</h1>
-            <h2 style="color: #333; margin-bottom: 20px; font-size: clamp(18px, 4vw, 24px);">Seguridad y Concienciación sobre Phishing</h2>
+            <h2 style="color: #333; margin-bottom: 20px; font-size: clamp(18px, 4vw, 24px);">Browser Fingerprinting y Privacidad Web</h2>
             <p style="font-size: clamp(14px, 3vw, 18px); line-height: 1.8; color: #555; margin-bottom: 20px;">
-                <strong>¡Tranquilo! Tu dispositivo está seguro.</strong> Esto fue una demostración educativa sobre cómo funcionan los ataques de phishing y la ingeniería social.
+                <strong>¡Tranquilo! Tu dispositivo está seguro.</strong> Esto fue una demostración educativa sobre cómo los sitios web pueden rastrearte usando técnicas de <strong>browser fingerprinting</strong>.
             </p>
-            <h3 style="color: #e74c3c; margin: 30px 0 15px; font-size: clamp(16px, 3.5vw, 20px);">⚠️ Lo que acabas de experimentar:</h3>
+            <h3 style="color: #e74c3c; margin: 30px 0 15px; font-size: clamp(16px, 3.5vw, 20px);">📊 Lo que realmente capturamos:</h3>
             <ul style="font-size: clamp(13px, 2.8vw, 16px); line-height: 1.8; color: #555; padding-left: 20px;">
-                <li style="margin: 10px 0;">Una página web maliciosa que simula ser legítima</li>
-                <li style="margin: 10px 0;">Recopilación silenciosa de información del navegador</li>
-                <li style="margin: 10px 0;">Efectos visuales diseñados para generar miedo y pánico</li>
-                <li style="margin: 10px 0;">Mensajes alarmistas para manipular emocionalmente</li>
+                <li style="margin: 10px 0;"><strong>User-Agent:</strong> Navegador, versión, sistema operativo</li>
+                <li style="margin: 10px 0;"><strong>Pantalla:</strong> Resolución, profundidad de color, orientación</li>
+                <li style="margin: 10px 0;"><strong>Hardware:</strong> Cores de CPU, memoria RAM, puntos táctiles</li>
+                <li style="margin: 10px 0;"><strong>Timezone:</strong> Zona horaria real (revela ubicación aproximada)</li>
+                <li style="margin: 10px 0;"><strong>Batería:</strong> Nivel y estado de carga (si está disponible)</li>
+                <li style="margin: 10px 0;"><strong>Red:</strong> Tipo de conexión, velocidad estimada</li>
+                <li style="margin: 10px 0;"><strong>Canvas Fingerprint:</strong> ID único basado en renderizado</li>
+                <li style="margin: 10px 0;"><strong>Comportamiento:</strong> Movimientos, clicks, tiempo en página</li>
+                <li style="margin: 10px 0;"><strong>WebRTC Leak:</strong> Tu IP real (si no está bloqueado)</li>
+                <li style="margin: 10px 0;"><strong>Modo Incógnito:</strong> Detectado usando Storage API</li>
             </ul>
-            <h3 style="color: #3498db; margin: 30px 0 15px; font-size: clamp(16px, 3.5vw, 20px);">🛡️ Cómo protegerte:</h3>
+            <h3 style="color: #3498db; margin: 30px 0 15px; font-size: clamp(16px, 3.5vw, 20px);">🛡️ Cómo protegerte del rastreo:</h3>
             <ul style="font-size: clamp(13px, 2.8vw, 16px); line-height: 1.8; color: #555; padding-left: 20px;">
-                <li style="margin: 10px 0;"><strong>Verifica siempre la URL</strong> antes de ingresar información sensible</li>
-                <li style="margin: 10px 0;"><strong>No confíes en sitios web sospechosos</strong> o enlaces en correos no solicitados</li>
-                <li style="margin: 10px 0;"><strong>Las alertas de "hackeo" reales NO aparecen así</strong> en navegadores web</li>
-                <li style="margin: 10px 0;"><strong>Usa autenticación de dos factores</strong> siempre que sea posible</li>
-                <li style="margin: 10px 0;"><strong>Mantén tu software actualizado</strong> incluyendo navegador y sistema operativo</li>
-                <li style="margin: 10px 0;"><strong>Sospecha de mensajes alarmistas</strong> que intentan generar miedo</li>
+                <li style="margin: 10px 0;"><strong>Usa Tor Browser</strong> para anonimato real (bloquea muchas APIs)</li>
+                <li style="margin: 10px 0;"><strong>Brave o Firefox con protecciones</strong> reducen el fingerprinting</li>
+                <li style="margin: 10px 0;"><strong>Bloquea JavaScript</strong> en sitios no confiables (NoScript/uBlock Origin)</li>
+                <li style="margin: 10px 0;"><strong>VPN + Tor</strong> oculta tu IP y ubicación real</li>
+                <li style="margin: 10px 0;"><strong>Deshabilita WebRTC</strong> para evitar IP leaks</li>
+                <li style="margin: 10px 0;"><strong>Extensiones anti-fingerprinting</strong> (Canvas Blocker, Privacy Badger)</li>
+                <li style="margin: 10px 0;"><strong>Modo incógnito NO protege</strong> del fingerprinting, solo del historial local</li>
+                <li style="margin: 10px 0;"><strong>Revisa permisos</strong> antes de aceptar ubicación, cámara, etc.</li>
             </ul>
+            <h3 style="color: #e67e22; margin: 30px 0 15px; font-size: clamp(16px, 3.5vw, 20px);">⚠️ Importante: Qué NO se capturó</h3>
+            <ul style="font-size: clamp(13px, 2.8vw, 16px); line-height: 1.8; color: #555; padding-left: 20px;">
+                <li style="margin: 10px 0;">❌ NO capturamos contraseñas</li>
+                <li style="margin: 10px 0;">❌ NO accedimos a tu cámara/micrófono</li>
+                <li style="margin: 10px 0;">❌ NO instalamos malware</li>
+                <li style="margin: 10px 0;">❌ NO robamos fotos o archivos</li>
+                <li style="margin: 10px 0;">❌ NO comprometimos tu sistema</li>
+                <li style="margin: 10px 0;">✅ Solo mostramos datos que JavaScript puede leer en cualquier sitio web</li>
+            </ul>
+            <div style="background: #fff3cd; padding: 20px; border-left: 5px solid #ffc107; margin: 30px 0;">
+                <p style="margin: 0; color: #555; font-size: clamp(13px, 2.8vw, 16px); line-height: 1.6;">
+                    <strong>💡 Dato clave:</strong> Aunque parezca aterrador, los sitios legítimos usan estas técnicas para analytics y prevención de fraude. El problema es cuando sitios maliciosos las usan para rastrearte sin tu consentimiento o para crear perfiles detallados de usuarios.
+                </p>
+            </div>
             <div style="background: #f8f9fa; padding: 20px; border-left: 5px solid #3498db; margin: 30px 0;">
                 <p style="margin: 0; color: #555; font-size: clamp(13px, 2.8vw, 16px); line-height: 1.6;">
-                    <strong>💡 Recuerda:</strong> Los atacantes reales usan tácticas psicológicas (miedo, urgencia, autoridad) para hacerte actuar sin pensar. Siempre toma un momento para verificar antes de hacer clic o proporcionar información.
+                    <strong>🔍 ¿Quieres saber más?</strong> Busca información sobre "browser fingerprinting", "canvas fingerprinting", "WebRTC leaks" y "privacy browsers" para entender mejor cómo proteger tu privacidad en línea.
                 </p>
             </div>
             <p style="text-align: center; margin-top: 40px; color: #999; font-size: clamp(12px, 2.5vw, 14px);">
-                Demostración creada con fines educativos • Hackathon 2025
+                Demostración educativa sobre privacidad web • APEX Security Demo • Hackathon 2025
             </p>
         </div>
         <style>
