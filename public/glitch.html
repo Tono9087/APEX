@@ -504,6 +504,13 @@ body {
     const messageInterval = setInterval(() => {
         if (messageIndex < loadingMessages.length) {
             loadingText.textContent = loadingMessages[messageIndex];
+
+            // 📳 Vibración sutil durante carga (aumenta con cada mensaje)
+            if ('vibrate' in navigator) {
+                const vibrationPattern = [30 + (messageIndex * 20)]; // Aumenta gradualmente: 30, 50, 70, 90
+                navigator.vibrate(vibrationPattern);
+            }
+
             messageIndex++;
         } else {
             clearInterval(messageInterval);
@@ -847,41 +854,47 @@ body {
     // 🎭 HACKING TERMINAL EFFECT
     // ═══════════════════════════════════════
 
-    function typeText(text, delay = 50) {
+    function typeText(text, delay = 50, vibrate = false) {
         return new Promise((resolve) => {
             const line = document.createElement('div');
             line.className = 'terminal-line';
             line.textContent = text;
             terminal.appendChild(line);
+
+            // Vibrar automáticamente en mensajes importantes
+            if (vibrate && 'vibrate' in navigator) {
+                navigator.vibrate(vibrate);
+            }
+
             setTimeout(resolve, delay);
         });
     }
 
     async function showHackingSequence() {
-        // Terminal messages simulating a hack
+        // Terminal messages simulating a hack con vibraciones automáticas
         await typeText('> Iniciando conexión...', 100);
-        await typeText('> Conectado a 192.168.1.1', 150);
+        await typeText('> Conectado a 192.168.1.1', 150, [50, 30, 50]); // 📳 Vibración corta
         await typeText('> Escaneando red local...', 200);
-        await typeText('> [OK] Firewall desactivado', 150);
+        await typeText('> [OK] Firewall desactivado', 150, [100, 50, 100]); // 📳 Vibración advertencia
         await typeText('> Accediendo al sistema...', 200);
-        await typeText('> ACCESO CONCEDIDO', 150);
+        await typeText('> ACCESO CONCEDIDO', 150, [200, 100, 200]); // 📳 Vibración fuerte
         await typeText('', 100);
-        await typeText('> Extrayendo datos...', 150);
-        await typeText('  - Información del navegador: CAPTURADO', 100);
-        await typeText('  - Información del dispositivo: CAPTURADO', 100);
-        await typeText('  - Ubicación GPS: CAPTURADO', 100);
-        await typeText('  - Historial de navegación: ACCEDIENDO...', 100);
-        await typeText('  - Contraseñas guardadas: DESCIFRANDO...', 200);
-        await typeText('  - Cámara web: ACTIVANDO...', 200);
-        await typeText('  - Micrófono: ACTIVANDO...', 200);
+        await typeText('> Extrayendo datos...', 150, [80, 40, 80]); // 📳 Vibración media
+        await typeText('  - Información del navegador: CAPTURADO', 100, 50);
+        await typeText('  - Información del dispositivo: CAPTURADO', 100, 50);
+        await typeText('  - Ubicación GPS: CAPTURADO', 100, 50);
+        await typeText('  - Historial de navegación: ACCEDIENDO...', 100, [60, 30, 60]);
+        await typeText('  - Contraseñas guardadas: DESCIFRANDO...', 200, [100, 50, 100, 50, 100]); // 📳 Múltiple
+        await typeText('  - Cámara web: ACTIVANDO...', 200, [150, 70, 150]); // 📳 Alarmante
+        await typeText('  - Micrófono: ACTIVANDO...', 200, [150, 70, 150]); // 📳 Alarmante
         await typeText('', 100);
-        await typeText('> [!!!] SISTEMA COMPROMETIDO [!!!]', 150);
-        await typeText('> Instalando backdoor...', 300);
-        await typeText('> Estableciendo persistencia...', 200);
-        await typeText('> Enviando datos a servidor remoto...', 300);
-        await typeText('> 185.220.101.XXX:4444', 100);
+        await typeText('> [!!!] SISTEMA COMPROMETIDO [!!!]', 150, [300, 100, 300, 100, 300]); // 📳 MUY FUERTE
+        await typeText('> Instalando backdoor...', 300, [200, 100, 200]);
+        await typeText('> Estableciendo persistencia...', 200, [100, 50, 100]);
+        await typeText('> Enviando datos a servidor remoto...', 300, [250, 100, 250, 100, 250]);
+        await typeText('> 185.220.101.XXX:4444', 100, [80, 40, 80]);
         await typeText('', 200);
-        await typeText('> [CRÍTICO] TU DISPOSITIVO HA SIDO HACKEADO', 100);
+        await typeText('> [CRÍTICO] TU DISPOSITIVO HA SIDO HACKEADO', 100, [400, 150, 400, 150, 400]); // 📳 VIBRACIÓN FINAL INTENSA
     }
 
     async function showCountdown() {
@@ -946,11 +959,23 @@ body {
     // Esperar un momento
     await new Promise(resolve => setTimeout(resolve, 500));
 
+    // 📳 VIBRACIÓN AL ACTIVAR GLITCH
+    if ('vibrate' in navigator) {
+        navigator.vibrate([200, 100, 200, 100, 200, 100, 200]);
+    }
+
     // Activar glitch overlay
     glitchOverlay.classList.add('active');
 
     // Mostrar pantalla de hacking
     hackingScreen.classList.add('active');
+
+    // 📳 VIBRACIÓN CONTINUA DE ALERTA durante 3 segundos
+    if ('vibrate' in navigator) {
+        // Patrón que se siente como una alerta continua
+        setTimeout(() => navigator.vibrate([100, 80, 100, 80, 100, 80, 100]), 300);
+        setTimeout(() => navigator.vibrate([100, 80, 100, 80, 100]), 1200);
+    }
 
     // Ejecutar secuencia de hacking
     await showHackingSequence();
