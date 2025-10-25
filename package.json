@@ -1,18 +1,31 @@
 {
-  "name": "phishing-server",
+  "name": "apex-phishing-server",
   "version": "3.0.0",
-  "description": "Servidor de captura para hackathon de ciberseguridad",
+  "description": "Servidor backend para captura de datos de phishing con MongoDB Atlas",
   "main": "app.js",
   "scripts": {
-    "start": "node app.js"
+    "start": "node --tls-min-v1.2 app.js",
+    "dev": "nodemon --tls-min-v1.2 app.js"
   },
+  "keywords": [
+    "phishing",
+    "cybersecurity",
+    "hackathon",
+    "fingerprinting",
+    "mongodb"
+  ],
+  "author": "",
+  "license": "MIT",
   "dependencies": {
     "express": "^4.18.2",
     "cors": "^2.8.5",
     "geoip-lite": "^1.4.7",
     "mongodb": "^6.3.0"
   },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
   "engines": {
-    "node": ">=18.0.0"
+    "node": "20.x"
   }
 }

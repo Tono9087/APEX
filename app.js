@@ -14,19 +14,21 @@ if (!uri) {
   process.exit(1);
 }
 
+// Opciones de conexión optimizadas para Node.js 20+
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
     strict: true,
     deprecationErrors: true,
   },
-  tls: true,
-  tlsAllowInvalidCertificates: false,
-  tlsAllowInvalidHostnames: false,
   connectTimeoutMS: 30000,
   socketTimeoutMS: 30000,
+  serverSelectionTimeoutMS: 30000,
   maxPoolSize: 10,
-  minPoolSize: 2
+  minPoolSize: 2,
+  retryWrites: true,
+  retryReads: true,
+  w: 'majority'
 });
 
 let victimsCollection;
