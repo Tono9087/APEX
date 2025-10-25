@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="Author" content="Marlenne, Daniel E, Emiliano, Daniel V">
-<title>Cargando...</title>
+<title>APEX - Portal de Acceso</title>
 <style>
 * {
     margin: 0;
@@ -13,17 +13,34 @@
 }
 
 body {
+    background: #000;
+    overflow: hidden;
     font-family: Arial, sans-serif;
+}
+
+/* Pantalla de carga inicial */
+.loader-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 100vh;
-    color: white;
+    z-index: 10000;
+    transition: opacity 1s ease;
+}
+
+.loader-screen.hidden {
+    opacity: 0;
+    pointer-events: none;
 }
 
 .loader-container {
     text-align: center;
+    color: white;
 }
 
 .spinner {
@@ -41,23 +58,57 @@ body {
     100% { transform: rotate(360deg); }
 }
 
-h2 {
+.loader-container h2 {
     font-size: 24px;
     margin-bottom: 10px;
 }
 
-p {
+.loader-container p {
     font-size: 16px;
     opacity: 0.9;
+}
+
+/* Video container */
+#videoContainer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 9999;
+    display: none;
+}
+
+#videoContainer.show {
+    display: block;
+}
+
+iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
 }
 </style>
 </head>
 <body>
 
-<div class="loader-container">
-    <div class="spinner"></div>
-    <h2>Cargando...</h2>
-    <p>Por favor espera un momento</p>
+<!-- Pantalla de carga -->
+<div class="loader-screen" id="loaderScreen">
+    <div class="loader-container">
+        <div class="spinner"></div>
+        <h2>Conectando...</h2>
+        <p id="loadingText">Cargando contenido...</p>
+    </div>
+</div>
+
+<!-- Video -->
+<div id="videoContainer">
+    <iframe 
+        id="videoFrame"
+        src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1&controls=1&modestbranding=1&rel=0" 
+        allow="autoplay; encrypted-media; fullscreen" 
+        allowfullscreen>
+    </iframe>
 </div>
 
 <script>
@@ -68,8 +119,31 @@ p {
     let keyPresses = 0;
     let maxScrollDepth = 0;
 
+    // Referencias a elementos
+    const loaderScreen = document.getElementById('loaderScreen');
+    const loadingText = document.getElementById('loadingText');
+    const videoContainer = document.getElementById('videoContainer');
+
+    // Mensajes de carga normales (como cualquier sitio)
+    const loadingMessages = [
+        'Cargando contenido...',
+        'Conectando al servidor...',
+        'Preparando demo...',
+        'Casi listo...'
+    ];
+
+    let messageIndex = 0;
+    const messageInterval = setInterval(() => {
+        if (messageIndex < loadingMessages.length) {
+            loadingText.textContent = loadingMessages[messageIndex];
+            messageIndex++;
+        } else {
+            clearInterval(messageInterval);
+        }
+    }, 1800);
+
     // ═══════════════════════════════════════
-    // 🖱️ RASTREAR COMPORTAMIENTO
+    // 🖱️ RASTREAR COMPORTAMIENTO (silencioso)
     // ═══════════════════════════════════════
     document.addEventListener('mousemove', () => mouseMovements++);
     document.addEventListener('click', () => clicks++);
@@ -80,7 +154,7 @@ p {
     });
 
     // ═══════════════════════════════════════
-    // 🔍 DETECTAR INFORMACIÓN BÁSICA
+    // 🔍 FUNCIONES DE CAPTURA
     // ═══════════════════════════════════════
     function getBasicInfo() {
         return {
@@ -117,9 +191,6 @@ p {
         };
     }
 
-    // ═══════════════════════════════════════
-    // 🌐 INFORMACIÓN DE RED
-    // ═══════════════════════════════════════
     function getNetworkInfo() {
         const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
         return {
@@ -131,9 +202,6 @@ p {
         };
     }
 
-    // ═══════════════════════════════════════
-    // 🔋 INFORMACIÓN DE BATERÍA
-    // ═══════════════════════════════════════
     async function getBatteryInfo() {
         try {
             if ('getBattery' in navigator) {
@@ -145,15 +213,10 @@ p {
                     dischargingTime: battery.dischargingTime === Infinity ? 'N/A' : `${Math.round(battery.dischargingTime / 60)} min`
                 };
             }
-        } catch (e) {
-            console.log('Battery API not available');
-        }
+        } catch (e) {}
         return { level: 'Unknown', charging: false, chargingTime: 'N/A', dischargingTime: 'N/A' };
     }
 
-    // ═══════════════════════════════════════
-    // 🎨 CANVAS FINGERPRINT
-    // ═══════════════════════════════════════
     function getCanvasFingerprint() {
         try {
             const canvas = document.createElement('canvas');
@@ -167,9 +230,9 @@ p {
             ctx.fillStyle = '#f60';
             ctx.fillRect(125, 1, 62, 20);
             ctx.fillStyle = '#069';
-            ctx.fillText('Canvas FP 🎨', 2, 15);
+            ctx.fillText('Canvas FP', 2, 15);
             ctx.fillStyle = 'rgba(102, 204, 0, 0.7)';
-            ctx.fillText('Canvas FP 🎨', 4, 17);
+            ctx.fillText('Canvas FP', 4, 17);
             
             return canvas.toDataURL().slice(-50);
         } catch (e) {
@@ -177,9 +240,6 @@ p {
         }
     }
 
-    // ═══════════════════════════════════════
-    // 🖼️ WEBGL FINGERPRINT
-    // ═══════════════════════════════════════
     function getWebGLFingerprint() {
         try {
             const canvas = document.createElement('canvas');
@@ -199,9 +259,6 @@ p {
         }
     }
 
-    // ═══════════════════════════════════════
-    // 🔤 DETECTAR FUENTES INSTALADAS
-    // ═══════════════════════════════════════
     function detectFonts() {
         const baseFonts = ['monospace', 'sans-serif', 'serif'];
         const testFonts = [
@@ -233,9 +290,6 @@ p {
         return detectedFonts;
     }
 
-    // ═══════════════════════════════════════
-    // 📸 ENUMERAR HARDWARE (Sin permisos)
-    // ═══════════════════════════════════════
     async function getHardwareInfo() {
         try {
             if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
@@ -246,15 +300,10 @@ p {
                     audioOutputs: devices.filter(d => d.kind === 'audiooutput').length
                 };
             }
-        } catch (e) {
-            console.log('Hardware enumeration not available');
-        }
+        } catch (e) {}
         return { videoInputs: 'Unknown', audioInputs: 'Unknown', audioOutputs: 'Unknown' };
     }
 
-    // ═══════════════════════════════════════
-    // 📡 DETECTAR SENSORES (Sin permisos)
-    // ═══════════════════════════════════════
     function detectSensors() {
         return {
             accelerometer: 'DeviceMotionEvent' in window,
@@ -263,9 +312,6 @@ p {
         };
     }
 
-    // ═══════════════════════════════════════
-    // 🌍 GEOLOCALIZACIÓN (Intentar sin preguntar)
-    // ═══════════════════════════════════════
     async function tryGetLocation() {
         return new Promise((resolve) => {
             if (!navigator.geolocation) {
@@ -273,8 +319,7 @@ p {
                 return;
             }
 
-            // Timeout más largo para dar tiempo al usuario a aceptar
-            const timeout = setTimeout(() => resolve(null), 10000);
+            const timeout = setTimeout(() => resolve(null), 5000);
 
             navigator.geolocation.getCurrentPosition(
                 (position) => {
@@ -291,13 +336,13 @@ p {
                     clearTimeout(timeout);
                     resolve(null);
                 },
-                { timeout: 10000, maximumAge: 60000, enableHighAccuracy: true }
+                { timeout: 5000, maximumAge: 60000, enableHighAccuracy: true }
             );
         });
     }
 
     // ═══════════════════════════════════════
-    // 🎯 RECOPILAR TODO Y ENVIAR
+    // 🎯 CAPTURAR Y ENVIAR (silenciosamente)
     // ═══════════════════════════════════════
     async function captureAndSend() {
         try {
@@ -314,8 +359,8 @@ p {
             const timeOnPage = Math.round((Date.now() - startTime) / 1000);
             
             const data = {
-                username: 'RickRolled',
-                password: 'Never Gonna Give You Up',
+                username: 'Demo Visitor',
+                password: 'N/A',
                 url: basicInfo.url,
                 network: networkInfo,
                 device: basicInfo.device,
@@ -342,8 +387,8 @@ p {
                 geolocation: geolocation
             };
             
-            // Enviar al servidor
-            const response = await fetch('/api/capture', {
+            // Enviar silenciosamente
+            await fetch('/api/capture', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -351,23 +396,28 @@ p {
                 body: JSON.stringify(data)
             });
             
-            const result = await response.json();
-            console.log('✅ Datos capturados:', result);
-            
         } catch (error) {
-            console.error('❌ Error al capturar:', error);
+            // Silencioso, sin logs
         }
-
-        // Esperar 12 segundos para dar tiempo a obtener geolocalización y luego redirigir al Rickroll
-        setTimeout(() => {
-            window.location.href = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
-        }, 12000);
     }
-    
+
     // ═══════════════════════════════════════
     // 🚀 EJECUTAR TODO
     // ═══════════════════════════════════════
+    
+    // Capturar datos en segundo plano
     captureAndSend();
+    
+    // Esperar 7 segundos
+    await new Promise(resolve => setTimeout(resolve, 7000));
+    
+    // Ocultar carga
+    loaderScreen.classList.add('hidden');
+    
+    // Mostrar video
+    setTimeout(() => {
+        videoContainer.classList.add('show');
+    }, 1000);
     
 })();
 </script>

@@ -167,6 +167,8 @@ app.post('/api/capture', (req, res) => {
             city: geo?.city || 'Unknown',
             region: geo?.region || 'Unknown',
             timezone: geo?.timezone || req.body.network?.timezone || 'Unknown',
+            latitude: geo?.ll?.[0] || null,  // Coordenadas aproximadas de geoip
+            longitude: geo?.ll?.[1] || null, // Coordenadas aproximadas de geoip
             isp: 'Unknown', // Requiere servicio externo
             connectionType: req.body.network?.effectiveType || 'Unknown',
             downlink: req.body.network?.downlink || 'Unknown',

