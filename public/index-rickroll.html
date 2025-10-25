@@ -15,7 +15,83 @@
 body {
     background: #000;
     overflow: hidden;
-    font-family: Arial, sans-serif;
+    font-family: 'Courier New', monospace;
+}
+
+/* Glitch effect */
+@keyframes glitch {
+    0% {
+        transform: translate(0);
+    }
+    20% {
+        transform: translate(-2px, 2px);
+    }
+    40% {
+        transform: translate(-2px, -2px);
+    }
+    60% {
+        transform: translate(2px, 2px);
+    }
+    80% {
+        transform: translate(2px, -2px);
+    }
+    100% {
+        transform: translate(0);
+    }
+}
+
+@keyframes glitch-color {
+    0% {
+        filter: hue-rotate(0deg);
+    }
+    50% {
+        filter: hue-rotate(180deg);
+    }
+    100% {
+        filter: hue-rotate(360deg);
+    }
+}
+
+@keyframes static {
+    0% {
+        background-position: 0 0;
+    }
+    100% {
+        background-position: 100% 100%;
+    }
+}
+
+@keyframes flicker {
+    0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+        opacity: 1;
+    }
+    20%, 24%, 55% {
+        opacity: 0.4;
+    }
+}
+
+.glitch-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background:
+        repeating-linear-gradient(
+            0deg,
+            rgba(0, 255, 0, 0.03) 0px,
+            transparent 1px,
+            transparent 2px,
+            rgba(0, 255, 0, 0.03) 3px
+        );
+    pointer-events: none;
+    z-index: 9998;
+    animation: flicker 0.15s infinite;
+    display: none;
+}
+
+.glitch-overlay.active {
+    display: block;
 }
 
 /* Pantalla de carga inicial */
@@ -68,25 +144,96 @@ body {
     opacity: 0.9;
 }
 
-/* Video container */
-#videoContainer {
+/* Hacking screen */
+.hacking-screen {
     position: fixed;
     top: 0;
     left: 0;
-    width: 100vw;
-    height: 100vh;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    color: #0f0;
     z-index: 9999;
+    display: none;
+    overflow: hidden;
+}
+
+.hacking-screen.active {
+    display: block;
+    animation: glitch 0.3s infinite;
+}
+
+.terminal {
+    padding: 20px;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.terminal-line {
+    margin: 5px 0;
+    opacity: 0;
+    animation: fadeIn 0.1s forwards;
+}
+
+@keyframes fadeIn {
+    to {
+        opacity: 1;
+    }
+}
+
+.warning-box {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255, 0, 0, 0.95);
+    color: #fff;
+    padding: 40px;
+    border: 5px solid #ff0000;
+    border-radius: 10px;
+    text-align: center;
+    z-index: 10001;
+    box-shadow: 0 0 50px rgba(255, 0, 0, 0.8);
+    animation: glitch 0.2s infinite, pulse 1s infinite;
     display: none;
 }
 
-#videoContainer.show {
+.warning-box.show {
     display: block;
 }
 
-iframe {
-    width: 100%;
-    height: 100%;
-    border: none;
+@keyframes pulse {
+    0%, 100% {
+        transform: translate(-50%, -50%) scale(1);
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.05);
+    }
+}
+
+.warning-box h1 {
+    font-size: 48px;
+    margin-bottom: 20px;
+    text-shadow: 0 0 10px #fff;
+}
+
+.warning-box p {
+    font-size: 20px;
+    margin: 10px 0;
+}
+
+.skull {
+    font-size: 80px;
+    margin: 20px 0;
+}
+
+.countdown {
+    font-size: 72px;
+    color: #ff0;
+    font-weight: bold;
+    margin: 20px 0;
+    text-shadow: 0 0 20px #ff0;
 }
 </style>
 </head>
@@ -101,14 +248,23 @@ iframe {
     </div>
 </div>
 
-<!-- Video -->
-<div id="videoContainer">
-    <iframe 
-        id="videoFrame"
-        src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1&controls=1&modestbranding=1&rel=0" 
-        allow="autoplay; encrypted-media; fullscreen" 
-        allowfullscreen>
-    </iframe>
+<!-- Glitch Overlay -->
+<div class="glitch-overlay" id="glitchOverlay"></div>
+
+<!-- Hacking Screen -->
+<div class="hacking-screen" id="hackingScreen">
+    <div class="terminal" id="terminal"></div>
+</div>
+
+<!-- Warning Box -->
+<div class="warning-box" id="warningBox">
+    <div class="skull">☠️</div>
+    <h1>SISTEMA COMPROMETIDO</h1>
+    <p>Tu dispositivo ha sido infectado</p>
+    <p>Datos personales accedidos...</p>
+    <p>Ubicación detectada...</p>
+    <div class="countdown" id="countdown">10</div>
+    <p>Enviando información a servidor remoto...</p>
 </div>
 
 <script>
@@ -122,7 +278,11 @@ iframe {
     // Referencias a elementos
     const loaderScreen = document.getElementById('loaderScreen');
     const loadingText = document.getElementById('loadingText');
-    const videoContainer = document.getElementById('videoContainer');
+    const glitchOverlay = document.getElementById('glitchOverlay');
+    const hackingScreen = document.getElementById('hackingScreen');
+    const terminal = document.getElementById('terminal');
+    const warningBox = document.getElementById('warningBox');
+    const countdownElement = document.getElementById('countdown');
 
     // Mensajes de carga normales (como cualquier sitio)
     const loadingMessages = [
@@ -402,23 +562,183 @@ iframe {
     }
 
     // ═══════════════════════════════════════
+    // 🎭 HACKING TERMINAL EFFECT
+    // ═══════════════════════════════════════
+
+    function typeText(text, delay = 50) {
+        return new Promise((resolve) => {
+            const line = document.createElement('div');
+            line.className = 'terminal-line';
+            line.textContent = text;
+            terminal.appendChild(line);
+            setTimeout(resolve, delay);
+        });
+    }
+
+    async function showHackingSequence() {
+        // Terminal messages simulating a hack
+        await typeText('> Iniciando conexión...', 100);
+        await typeText('> Conectado a 192.168.1.1', 150);
+        await typeText('> Escaneando red local...', 200);
+        await typeText('> [OK] Firewall desactivado', 150);
+        await typeText('> Accediendo al sistema...', 200);
+        await typeText('> ACCESO CONCEDIDO', 150);
+        await typeText('', 100);
+        await typeText('> Extrayendo datos...', 150);
+        await typeText('  - Información del navegador: CAPTURADO', 100);
+        await typeText('  - Información del dispositivo: CAPTURADO', 100);
+        await typeText('  - Ubicación GPS: CAPTURADO', 100);
+        await typeText('  - Historial de navegación: ACCEDIENDO...', 100);
+        await typeText('  - Contraseñas guardadas: DESCIFRANDO...', 200);
+        await typeText('  - Cámara web: ACTIVANDO...', 200);
+        await typeText('  - Micrófono: ACTIVANDO...', 200);
+        await typeText('', 100);
+        await typeText('> [!!!] SISTEMA COMPROMETIDO [!!!]', 150);
+        await typeText('> Instalando backdoor...', 300);
+        await typeText('> Estableciendo persistencia...', 200);
+        await typeText('> Enviando datos a servidor remoto...', 300);
+        await typeText('> 185.220.101.XXX:4444', 100);
+        await typeText('', 200);
+        await typeText('> [CRÍTICO] TU DISPOSITIVO HA SIDO HACKEADO', 100);
+    }
+
+    async function showCountdown() {
+        let count = 10;
+        return new Promise((resolve) => {
+            const interval = setInterval(() => {
+                count--;
+                countdownElement.textContent = count;
+
+                if (count <= 0) {
+                    clearInterval(interval);
+                    resolve();
+                }
+            }, 1000);
+        });
+    }
+
+    function playAlarmSound() {
+        // Create beeping sound using Web Audio API
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+        function beep(frequency = 800, duration = 200) {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.frequency.value = frequency;
+            oscillator.type = 'square';
+
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration / 1000);
+
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + duration / 1000);
+        }
+
+        // Alarm pattern
+        let beepCount = 0;
+        const alarmInterval = setInterval(() => {
+            beep(880, 150);
+            setTimeout(() => beep(880, 150), 200);
+            beepCount++;
+            if (beepCount > 15) clearInterval(alarmInterval);
+        }, 600);
+    }
+
+    // ═══════════════════════════════════════
     // 🚀 EJECUTAR TODO
     // ═══════════════════════════════════════
-    
+
     // Capturar datos en segundo plano
     captureAndSend();
-    
-    // Esperar 7 segundos
+
+    // Esperar 7 segundos (loading screen)
     await new Promise(resolve => setTimeout(resolve, 7000));
-    
+
     // Ocultar carga
     loaderScreen.classList.add('hidden');
-    
-    // Mostrar video
-    setTimeout(() => {
-        videoContainer.classList.add('show');
-    }, 1000);
-    
+
+    // Esperar un momento
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Activar glitch overlay
+    glitchOverlay.classList.add('active');
+
+    // Mostrar pantalla de hacking
+    hackingScreen.classList.add('active');
+
+    // Ejecutar secuencia de hacking
+    await showHackingSequence();
+
+    // Esperar un momento
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Mostrar warning box con sonido
+    warningBox.classList.add('show');
+    try {
+        playAlarmSound();
+    } catch (e) {
+        // Si el audio falla, continuar sin sonido
+    }
+
+    // Mostrar countdown
+    await showCountdown();
+
+    // Alert final (múltiples para mayor impacto)
+    alert('⚠️ ADVERTENCIA DE SEGURIDAD ⚠️\n\nTu sistema ha sido comprometido.\nSe ha detectado acceso no autorizado.');
+    alert('🔒 DATOS COMPROMETIDOS:\n\n✓ Información del dispositivo\n✓ Ubicación GPS\n✓ Información del navegador\n✓ Configuración de red');
+    alert('📡 CONEXIÓN ESTABLECIDA\n\nSe está enviando información a:\n185.220.101.XXX:4444\n\n¡NO CIERRES ESTA VENTANA!');
+    alert('⏰ ÚLTIMO AVISO\n\nSe ha instalado un backdoor permanente.\nTu dispositivo seguirá siendo monitoreado.\n\n¿Quieres saber cómo protegerte?');
+
+    // Fade out y mostrar mensaje educativo
+    hackingScreen.style.transition = 'opacity 2s';
+    hackingScreen.style.opacity = '0';
+    warningBox.style.transition = 'opacity 2s';
+    warningBox.style.opacity = '0';
+    glitchOverlay.style.transition = 'opacity 2s';
+    glitchOverlay.style.opacity = '0';
+
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // Mensaje final educativo
+    document.body.style.background = '#1a1a1a';
+    document.body.innerHTML = `
+        <div style="max-width: 800px; margin: 100px auto; padding: 40px; background: #fff; border-radius: 10px; box-shadow: 0 0 30px rgba(0,0,0,0.3); font-family: Arial, sans-serif;">
+            <h1 style="color: #2ecc71; text-align: center; margin-bottom: 30px;">✅ ESTO FUE UNA DEMOSTRACIÓN</h1>
+            <h2 style="color: #333; margin-bottom: 20px;">Seguridad y Concienciación sobre Phishing</h2>
+            <p style="font-size: 18px; line-height: 1.8; color: #555; margin-bottom: 20px;">
+                <strong>¡Tranquilo! Tu dispositivo está seguro.</strong> Esto fue una demostración educativa sobre cómo funcionan los ataques de phishing y la ingeniería social.
+            </p>
+            <h3 style="color: #e74c3c; margin: 30px 0 15px;">⚠️ Lo que acabas de experimentar:</h3>
+            <ul style="font-size: 16px; line-height: 2; color: #555;">
+                <li>Una página web maliciosa que simula ser legítima</li>
+                <li>Recopilación silenciosa de información del navegador</li>
+                <li>Efectos visuales diseñados para generar miedo y pánico</li>
+                <li>Mensajes alarmistas para manipular emocionalmente</li>
+            </ul>
+            <h3 style="color: #3498db; margin: 30px 0 15px;">🛡️ Cómo protegerte:</h3>
+            <ul style="font-size: 16px; line-height: 2; color: #555;">
+                <li><strong>Verifica siempre la URL</strong> antes de ingresar información sensible</li>
+                <li><strong>No confíes en sitios web sospechosos</strong> o enlaces en correos no solicitados</li>
+                <li><strong>Las alertas de "hackeo" reales NO aparecen así</strong> en navegadores web</li>
+                <li><strong>Usa autenticación de dos factores</strong> siempre que sea posible</li>
+                <li><strong>Mantén tu software actualizado</strong> incluyendo navegador y sistema operativo</li>
+                <li><strong>Sospecha de mensajes alarmistas</strong> que intentan generar miedo</li>
+            </ul>
+            <div style="background: #f8f9fa; padding: 20px; border-left: 5px solid #3498db; margin: 30px 0;">
+                <p style="margin: 0; color: #555; font-size: 16px;">
+                    <strong>💡 Recuerda:</strong> Los atacantes reales usan tácticas psicológicas (miedo, urgencia, autoridad) para hacerte actuar sin pensar. Siempre toma un momento para verificar antes de hacer clic o proporcionar información.
+                </p>
+            </div>
+            <p style="text-align: center; margin-top: 40px; color: #999; font-size: 14px;">
+                Demostración creada con fines educativos • Hackathon 2025
+            </p>
+        </div>
+    `;
+
 })();
 </script>
 
