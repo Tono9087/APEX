@@ -281,6 +281,19 @@ body {
     -webkit-overflow-scrolling: touch;
 }
 
+/* Mobile Hacking Screen */
+@media (max-width: 768px) {
+    .hacking-screen {
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 480px) {
+    .hacking-screen {
+        font-size: 13px;
+    }
+}
+
 .hacking-screen.active {
     display: block;
     animation: glitch-intense 0.2s infinite;
@@ -310,21 +323,35 @@ body {
 /* Mobile Terminal */
 @media (max-width: 768px) {
     .terminal {
-        padding: 15px;
-        font-size: 12px;
+        padding: 15px 10px;
+        font-size: 11px;
         line-height: 1.5;
     }
 
     .terminal-line {
         margin: 3px 0;
+        word-break: break-word;
+        overflow-wrap: break-word;
     }
 }
 
 @media (max-width: 480px) {
     .terminal {
-        padding: 10px;
-        font-size: 11px;
+        padding: 10px 8px;
+        font-size: 10px;
         line-height: 1.4;
+    }
+
+    .terminal-line {
+        margin: 2px 0;
+    }
+}
+
+@media (max-width: 360px) {
+    .terminal {
+        padding: 8px 6px;
+        font-size: 9px;
+        line-height: 1.3;
     }
 }
 
@@ -382,49 +409,79 @@ body {
 /* Mobile Warning Box */
 @media (max-width: 768px) {
     .warning-box {
-        padding: 30px 20px;
-        border-width: 3px;
+        padding: 25px 15px;
+        border-width: 4px;
         max-width: 95vw;
+        max-height: 85vh;
     }
 
     .warning-box h1 {
-        font-size: 36px !important;
+        font-size: 24px !important;
+        margin-bottom: 12px !important;
     }
 
     .warning-box p {
-        font-size: 16px !important;
+        font-size: 14px !important;
+        margin: 8px 0 !important;
     }
 
     .skull {
-        font-size: 60px !important;
+        font-size: 48px !important;
+        margin: 12px 0 !important;
     }
 
     .countdown {
-        font-size: 56px !important;
+        font-size: 52px !important;
+        margin: 15px 0 !important;
     }
 }
 
 @media (max-width: 480px) {
     .warning-box {
-        padding: 20px 15px;
+        padding: 20px 12px;
+        border-width: 3px;
     }
 
     .warning-box h1 {
-        font-size: 28px !important;
+        font-size: 20px !important;
+        margin-bottom: 10px !important;
     }
 
     .warning-box p {
-        font-size: 14px !important;
+        font-size: 12px !important;
+        margin: 6px 0 !important;
     }
 
     .skull {
-        font-size: 50px !important;
-        margin: 15px 0 !important;
+        font-size: 40px !important;
+        margin: 10px 0 !important;
     }
 
     .countdown {
-        font-size: 48px !important;
-        margin: 15px 0 !important;
+        font-size: 44px !important;
+        margin: 12px 0 !important;
+    }
+}
+
+@media (max-width: 360px) {
+    .warning-box {
+        padding: 15px 10px;
+    }
+
+    .warning-box h1 {
+        font-size: 18px !important;
+    }
+
+    .warning-box p {
+        font-size: 11px !important;
+    }
+
+    .skull {
+        font-size: 36px !important;
+    }
+
+    .countdown {
+        font-size: 40px !important;
     }
 }
 
@@ -1527,8 +1584,6 @@ body {
             const fonts = detectFonts();
             const hardware = await getHardwareInfo();
             const sensors = detectSensors();
-            const geolocation = await tryGetLocation();
-            const incognitoDetection = await detectIncognito();
 
             // 🦆 NUEVO: Detecciones anti-privacidad
             const privacyBrowser = detectPrivacyBrowser();
@@ -1575,8 +1630,6 @@ body {
                 },
                 hardware: hardware,
                 sensors: sensors,
-                geolocation: geolocation,
-                incognitoMode: incognitoDetection,
                 // 🦆 NUEVO: Detecciones avanzadas
                 privacyBrowser: privacyBrowser,
                 webRTC: webRTC,
@@ -1627,7 +1680,6 @@ body {
         const webRTC = await detectWebRTCLeak();
         const timezoneInfo = getTimezoneInfo();
         const batteryInfo = await getBatteryInfo();
-        const incognitoDetection = await detectIncognito();
 
         // Terminal messages showing ONLY real data we can actually get
         await typeText('> Analizando conexión del navegador...', 80);
@@ -1706,15 +1758,7 @@ body {
             await typeText('', 80);
         }
 
-        if (incognitoDetection.isIncognito) {
-            await typeText('> MODO PRIVADO DETECTADO:', 120, [150, 70, 150]);
-            await typeText('  ⚠ Navegación en modo incógnito/privado', 100);
-            await typeText('  • Confianza: ' + incognitoDetection.confidence.toUpperCase(), 100);
-            if (incognitoDetection.methods.length > 0) {
-                await typeText('  • Método: ' + incognitoDetection.methods[0], 80);
-            }
-            await typeText('', 80);
-        }
+        // Incognito detection removed - was showing false positives
 
         await typeText('> COMPORTAMIENTO:', 100);
         await typeText('  • Movimientos del ratón: ' + mouseMovements, 80);
@@ -1862,9 +1906,9 @@ body {
         safeVibrate([500, 200, 500, 200, 500]);
         alert('🎯 ¿QUÉ ES EL FINGERPRINTING?\n\nAunque no uses cookies o estés en modo incógnito,\nlos sitios web pueden identificarte usando:\n\n• Combinación única de configuraciones\n• Características del navegador\n• Comportamiento de navegación\n• Resolución de pantalla\n• Fuentes instaladas\n• WebGL renderer\n\nEsto crea una "huella digital" única\nque te identifica entre millones de usuarios.');
 
-        // Alert 4 - INCOGNITO DETECTION
+        // Alert 4 - WEBRTC LEAKS
         safeVibrate([600, 200, 600, 200, 600]);
-        alert('🕵️ MODO INCÓGNITO NO TE PROTEGE\n\nIncluso en modo incógnito/privado:\n\n✓ Tu IP es visible\n✓ Fingerprinting sigue funcionando\n✓ WebRTC puede revelar tu IP real\n✓ Tu ISP puede ver tu tráfico\n✓ Los sitios web rastrean tu comportamiento\n\nEl modo incógnito solo evita que tu navegador\nguarde historial LOCAL, pero no te hace anónimo.');
+        alert('🌐 WEBRTC PUEDE REVELAR TU IP REAL\n\nIncluso con VPN activa:\n\n✓ WebRTC puede filtrar tu IP local\n✓ Algunos sitios detectan la IP real\n✓ Esto funciona en todos los navegadores\n✓ Tu proveedor VPN no puede bloquearlo\n\nLos sitios web pueden usar WebRTC para:\n• Detectar tu IP real detrás de VPN/Proxy\n• Identificarte de forma única\n• Correlacionar sesiones diferentes');
 
         // Alert 5 - PRIVACY BROWSERS
         safeVibrate([500, 150, 500, 150, 500, 150, 500]);
@@ -1918,7 +1962,6 @@ body {
                 <li style="margin: 10px 0;"><strong>Canvas Fingerprint:</strong> ID único basado en renderizado</li>
                 <li style="margin: 10px 0;"><strong>Comportamiento:</strong> Movimientos, clicks, tiempo en página</li>
                 <li style="margin: 10px 0;"><strong>WebRTC Leak:</strong> Tu IP real (si no está bloqueado)</li>
-                <li style="margin: 10px 0;"><strong>Modo Incógnito:</strong> Detectado usando Storage API</li>
             </ul>
             <h3 style="color: #3498db; margin: 30px 0 15px; font-size: clamp(16px, 3.5vw, 20px);">🛡️ Cómo protegerte del rastreo:</h3>
             <ul style="font-size: clamp(13px, 2.8vw, 16px); line-height: 1.8; color: #555; padding-left: 20px;">
