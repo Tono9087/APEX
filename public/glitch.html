@@ -1132,7 +1132,9 @@ body {
             tests: {}
         };
 
-        // Test 1: Storage Quota (más confiable)
+        console.log('🔍 Iniciando detección de modo incógnito...');
+
+        // Test 1: Storage Quota (más confiable para Chrome/Edge)
         try {
             if ('storage' in navigator && 'estimate' in navigator.storage) {
                 const { quota, usage } = await navigator.storage.estimate();
@@ -1143,44 +1145,69 @@ body {
                     quotaLimited: quota < 120000000
                 };
 
-                // Chrome Incognito: quota ~120MB
+                console.log(`📦 Storage Quota: ${quota ? (quota / 1024 / 1024).toFixed(2) + ' MB' : 'N/A'}`);
+
+                // Chrome/Edge Incognito: quota ~120MB o menos
                 // Firefox Private: quota ~10GB pero sin persistencia
                 if (quota && quota < 120000000) {
                     detection.isIncognito = true;
-                    detection.methods.push('Storage Quota Limitada');
+                    detection.methods.push('Storage Quota Limitada (<120MB)');
                     detection.indicators += 3;
                     detection.confidence = 'high';
                     console.log('🔒 Modo incógnito detectado: Storage quota limitada');
                 }
+            } else {
+                console.log('⚠️ Storage API no disponible');
             }
         } catch (e) {
+            console.log('❌ Error en Storage Quota:', e.message);
             detection.tests.storageQuota = { error: e.message };
         }
 
-        // Test 2: LocalStorage persistencia
+        // Test 2: LocalStorage persistencia (Safari Private Mode)
         try {
             localStorage.setItem('_incognito_test', '1');
             localStorage.removeItem('_incognito_test');
             detection.tests.localStorage = { available: true, persistent: true };
+            console.log('✅ LocalStorage disponible');
         } catch (e) {
             detection.isIncognito = true;
-            detection.methods.push('LocalStorage bloqueado');
-            detection.indicators += 2;
-            if (detection.confidence === 'low') detection.confidence = 'high';
+            detection.methods.push('LocalStorage bloqueado (Safari Private)');
+            detection.indicators += 3;
+            detection.confidence = 'high';
             detection.tests.localStorage = { available: false, error: e.message };
-            console.log('🔒 Modo incógnito detectado: LocalStorage bloqueado');
+            console.log('🔒 Modo incógnito detectado: LocalStorage bloqueado (Safari)');
         }
 
-        // Test 3: IndexedDB
+        // Test 3: IndexedDB (Firefox Private Mode)
         try {
             if (!window.indexedDB) {
                 detection.methods.push('IndexedDB no disponible');
-                detection.indicators += 1;
+                detection.indicators += 2;
                 detection.tests.indexedDB = { available: false };
+                console.log('🔒 IndexedDB bloqueado');
             } else {
-                detection.tests.indexedDB = { available: true };
+                // Firefox Private permite IndexedDB pero lo borra al cerrar
+                // Intentar abrir una base de datos
+                try {
+                    const request = indexedDB.open('_incognito_test', 1);
+                    request.onsuccess = () => {
+                        detection.tests.indexedDB = { available: true, writable: true };
+                        console.log('✅ IndexedDB disponible y funcional');
+                    };
+                    request.onerror = () => {
+                        detection.isIncognito = true;
+                        detection.methods.push('IndexedDB bloqueado (Firefox Private)');
+                        detection.indicators += 2;
+                        detection.tests.indexedDB = { available: false, blocked: true };
+                        console.log('🔒 IndexedDB bloqueado (Firefox Private)');
+                    };
+                } catch (err) {
+                    detection.tests.indexedDB = { available: true, error: err.message };
+                }
             }
         } catch (e) {
+            console.log('❌ Error en IndexedDB:', e.message);
             detection.tests.indexedDB = { error: e.message };
         }
 
@@ -1262,20 +1289,32 @@ body {
             detection.tests.storageRatio = { error: e.message };
         }
 
-        // Calcular nivel de confianza final (SIN incluir Tor Browser)
+        // Calcular nivel de confianza final
         if (detection.indicators >= 3) {
             detection.confidence = 'high';
             detection.isIncognito = true;
-        } else if (detection.indicators >= 1) {
+        } else if (detection.indicators >= 2) {
             detection.confidence = 'medium';
-            if (detection.indicators >= 2) detection.isIncognito = true;
+            detection.isIncognito = true;
+        } else if (detection.indicators >= 1) {
+            detection.confidence = 'low';
         }
 
-        // Log final
+        // Log final detallado
+        console.log('═══════════════════════════════════');
+        console.log(`📊 RESULTADO DETECCIÓN INCÓGNITO:`);
+        console.log(`   Incógnito: ${detection.isIncognito ? '⚠️ SÍ' : '✅ NO'}`);
+        console.log(`   Confianza: ${detection.confidence.toUpperCase()}`);
+        console.log(`   Indicadores: ${detection.indicators}`);
+        if (detection.methods.length > 0) {
+            console.log(`   Métodos: ${detection.methods.join(', ')}`);
+        }
+        console.log('═══════════════════════════════════');
+
         if (detection.isIncognito) {
-            console.log(`🕵️ MODO INCÓGNITO/PRIVADO CONFIRMADO (${detection.confidence}): ${detection.methods.join(', ')}`);
+            console.log(`🕵️ MODO INCÓGNITO/PRIVADO CONFIRMADO (${detection.confidence})`);
         } else {
-            console.log('✅ Modo normal (no incógnito)');
+            console.log('✅ Navegación en modo normal');
         }
 
         return detection;
