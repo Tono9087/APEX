@@ -2043,8 +2043,35 @@ html {
         document.body.style.overflow = 'auto';
         document.body.innerHTML = `
         <div style="display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px;">
-            <div style="text-align: center;">
-                <img src="APEX.png" alt="APEX Security" style="max-width: 500px; width: 100%; height: auto; margin: 0 auto; display: block; animation: fadeIn 1.5s ease-in;">
+            <div style="text-align: center; max-width: 600px;">
+                <img src="APEX.png" alt="APEX Security" style="max-width: 500px; width: 100%; height: auto; margin: 0 auto 30px; display: block; animation: fadeIn 1.5s ease-in;">
+
+                <div style="animation: fadeIn 2s ease-in; animation-delay: 0.5s; animation-fill-mode: both;">
+                    <p style="color: #e0e0e0; font-size: clamp(16px, 3vw, 20px); margin-bottom: 20px; font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6;">
+                        ✅ Esto fue solo una prueba de demostración educativa sobre seguridad web y fingerprinting de navegadores.
+                    </p>
+
+                    <p style="color: #888; font-size: clamp(14px, 2.5vw, 16px); margin-bottom: 25px; font-family: 'Segoe UI', Arial, sans-serif;">
+                        Ningún dato fue utilizado con fines maliciosos.
+                    </p>
+
+                    <a href="https://apexconnections.shop/MIT/" target="_blank" style="
+                        display: inline-block;
+                        background: linear-gradient(135deg, #00ff88, #00d4ff);
+                        color: #0a0e27;
+                        text-decoration: none;
+                        padding: 15px 30px;
+                        border-radius: 8px;
+                        font-weight: bold;
+                        font-size: clamp(14px, 2.5vw, 16px);
+                        font-family: 'Segoe UI', Arial, sans-serif;
+                        box-shadow: 0 4px 15px rgba(0,255,136,0.3);
+                        transition: all 0.3s ease;
+                    " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(0,255,136,0.5)';"
+                       onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,255,136,0.3)';">
+                        🔍 Para saber más visita este sitio web
+                    </a>
+                </div>
             </div>
         </div>
         <style>
