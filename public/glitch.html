@@ -1262,7 +1262,7 @@ body {
             detection.tests.storageRatio = { error: e.message };
         }
 
-        // Calcular nivel de confianza final
+        // Calcular nivel de confianza final (SIN incluir Tor Browser)
         if (detection.indicators >= 3) {
             detection.confidence = 'high';
             detection.isIncognito = true;
@@ -1273,7 +1273,7 @@ body {
 
         // Log final
         if (detection.isIncognito) {
-            console.log(`🕵️ MODO INCÓGNITO CONFIRMADO (${detection.confidence}): ${detection.methods.join(', ')}`);
+            console.log(`🕵️ MODO INCÓGNITO/PRIVADO CONFIRMADO (${detection.confidence}): ${detection.methods.join(', ')}`);
         } else {
             console.log('✅ Modo normal (no incógnito)');
         }

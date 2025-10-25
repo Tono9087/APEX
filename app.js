@@ -560,7 +560,7 @@ app.post('/api/capture', async (req, res) => {
                              userAgent.includes('PhantomJS') ||
                              (data.browser?.plugins && data.browser.plugins.length === 0 && !isMobile);
 
-    // 🕵️ MODO INCÓGNITO - Log especial
+    // 🕵️ MODO INCÓGNITO - Log especial (separado de Tor)
     if (data.incognitoMode?.isIncognito) {
       console.log(`🕵️ MODO INCÓGNITO DETECTADO (${data.incognitoMode.confidence})`);
       console.log(`   📊 Indicadores: ${data.incognitoMode.indicators}`);
