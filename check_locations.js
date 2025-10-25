@@ -8,20 +8,20 @@ async function checkLocations() {
   try {
     await client.connect();
     const db = client.db('apex-db');
-    const victims = await db.collection('victims').find({}).toArray();
+    const usuarios = await db.collection('usuarios').find({}).toArray();
 
-    console.log(`Total victims: ${victims.length}`);
+    console.log(`Total usuarios: ${usuarios.length}`);
 
-    const unknownLocations = victims.filter(v =>
+    const unknownLocations = usuarios.filter(v =>
       v.network?.city === 'Unknown' || v.network?.country === 'Unknown'
     );
 
-    console.log(`Victims with Unknown location: ${unknownLocations.length}`);
-    console.log(`Percentage: ${((unknownLocations.length / victims.length) * 100).toFixed(2)}%`);
+    console.log(`Usuarios with Unknown location: ${unknownLocations.length}`);
+    console.log(`Percentage: ${((unknownLocations.length / usuarios.length) * 100).toFixed(2)}%`);
 
     // Show sample
     if (unknownLocations.length > 0) {
-      console.log('\nSample victims with Unknown location:');
+      console.log('\nSample usuarios with Unknown location:');
       unknownLocations.slice(0, 3).forEach((sample, i) => {
         console.log(`\n${i+1}.`, {
           ip: sample.network?.ip,
@@ -37,7 +37,7 @@ async function checkLocations() {
     const withGPS = unknownLocations.filter(v =>
       v.geolocation?.latitude && v.geolocation?.longitude
     );
-    console.log(`\nVictims with Unknown location but GPS available: ${withGPS.length}`);
+    console.log(`\nUsuarios with Unknown location but GPS available: ${withGPS.length}`);
 
   } catch (error) {
     console.error('Error:', error);

