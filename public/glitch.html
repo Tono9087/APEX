@@ -8,6 +8,12 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>APEX - Portal de Acceso</title>
+
+<!-- Audio elements -->
+<audio id="consequenceAudio" preload="auto">
+    <source src="AudioConsequence.mp4" type="audio/mp4">
+</audio>
+
 <style>
 * {
     margin: 0;
@@ -1912,7 +1918,19 @@ html {
     safeVibrate([500, 200, 500, 200, 500, 200, 500]);
 
     try {
-        playAlarmSound();
+        // Play custom audio file
+        const consequenceAudio = document.getElementById('consequenceAudio');
+        if (consequenceAudio) {
+            consequenceAudio.volume = 0.7; // Set volume to 70%
+            consequenceAudio.play().catch(err => {
+                console.log('Audio play failed:', err);
+                // Fallback to beeping sound if audio file fails
+                playAlarmSound();
+            });
+        } else {
+            // Fallback to beeping sound if audio element not found
+            playAlarmSound();
+        }
     } catch (e) {
         // Si el audio falla, continuar sin sonido
     }
