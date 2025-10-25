@@ -25,46 +25,117 @@ body {
     user-select: none;
 }
 
-/* Glitch effect */
+/* Glitch effect - MÁS INTENSO */
 @keyframes glitch {
     0% {
         transform: translate(0);
     }
+    10% {
+        transform: translate(-5px, 5px) skew(2deg);
+    }
     20% {
-        transform: translate(-2px, 2px);
+        transform: translate(5px, -5px) skew(-2deg);
+    }
+    30% {
+        transform: translate(-5px, -5px) skew(3deg);
     }
     40% {
-        transform: translate(-2px, -2px);
+        transform: translate(5px, 5px) skew(-3deg);
+    }
+    50% {
+        transform: translate(-3px, 3px) skew(1deg);
     }
     60% {
-        transform: translate(2px, 2px);
+        transform: translate(3px, -3px) skew(-1deg);
+    }
+    70% {
+        transform: translate(-2px, 2px);
     }
     80% {
         transform: translate(2px, -2px);
+    }
+    90% {
+        transform: translate(-1px, 1px);
     }
     100% {
         transform: translate(0);
     }
 }
 
-@keyframes glitch-color {
+@keyframes glitch-intense {
     0% {
+        transform: translate(0) scale(1);
         filter: hue-rotate(0deg);
     }
+    10% {
+        transform: translate(-10px, 10px) scale(1.02);
+        filter: hue-rotate(90deg) brightness(1.2);
+    }
+    20% {
+        transform: translate(10px, -10px) scale(0.98);
+        filter: hue-rotate(180deg) brightness(0.8);
+    }
+    30% {
+        transform: translate(-8px, -8px) scale(1.01);
+        filter: hue-rotate(270deg) brightness(1.1);
+    }
+    40% {
+        transform: translate(8px, 8px) scale(0.99);
+        filter: hue-rotate(360deg) brightness(0.9);
+    }
     50% {
-        filter: hue-rotate(180deg);
+        transform: translate(-6px, 6px) scale(1.03);
+        filter: hue-rotate(180deg) contrast(1.3);
+    }
+    60% {
+        transform: translate(6px, -6px) scale(0.97);
+        filter: hue-rotate(90deg) contrast(0.7);
+    }
+    70% {
+        transform: translate(-4px, 4px) scale(1.01);
+    }
+    80% {
+        transform: translate(4px, -4px) scale(0.99);
+    }
+    90% {
+        transform: translate(-2px, 2px) scale(1.005);
     }
     100% {
-        filter: hue-rotate(360deg);
+        transform: translate(0) scale(1);
+        filter: hue-rotate(0deg);
+    }
+}
+
+@keyframes glitch-color {
+    0% {
+        filter: hue-rotate(0deg) saturate(2);
+    }
+    25% {
+        filter: hue-rotate(90deg) saturate(3);
+    }
+    50% {
+        filter: hue-rotate(180deg) saturate(2);
+    }
+    75% {
+        filter: hue-rotate(270deg) saturate(3);
+    }
+    100% {
+        filter: hue-rotate(360deg) saturate(2);
     }
 }
 
 @keyframes static {
     0% {
         background-position: 0 0;
+        opacity: 0.3;
+    }
+    50% {
+        background-position: 50% 50%;
+        opacity: 0.5;
     }
     100% {
         background-position: 100% 100%;
+        opacity: 0.3;
     }
 }
 
@@ -73,8 +144,23 @@ body {
         opacity: 1;
     }
     20%, 24%, 55% {
-        opacity: 0.4;
+        opacity: 0.3;
     }
+}
+
+@keyframes redFlash {
+    0%, 100% {
+        background: rgba(255, 0, 0, 0);
+    }
+    50% {
+        background: rgba(255, 0, 0, 0.8);
+    }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
+    20%, 40%, 60%, 80% { transform: translateX(10px); }
 }
 
 .glitch-overlay {
@@ -197,7 +283,13 @@ body {
 
 .hacking-screen.active {
     display: block;
-    animation: glitch 0.3s infinite;
+    animation: glitch-intense 0.2s infinite;
+    background: radial-gradient(circle, #001100 0%, #000000 100%);
+}
+
+.hacking-screen.critical {
+    animation: glitch-intense 0.1s infinite, redFlash 0.5s infinite;
+    background: radial-gradient(circle, #330000 0%, #000000 100%);
 }
 
 .terminal {
@@ -247,15 +339,15 @@ body {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background: rgba(255, 0, 0, 0.95);
+    background: linear-gradient(135deg, #ff0000 0%, #8b0000 100%);
     color: #fff;
     padding: 40px;
-    border: 5px solid #ff0000;
-    border-radius: 10px;
+    border: 8px solid #ff0000;
+    border-radius: 15px;
     text-align: center;
     z-index: 10001;
-    box-shadow: 0 0 50px rgba(255, 0, 0, 0.8);
-    animation: glitch 0.2s infinite, pulse 1s infinite;
+    box-shadow: 0 0 100px rgba(255, 0, 0, 1), inset 0 0 50px rgba(0, 0, 0, 0.5);
+    animation: glitch-intense 0.15s infinite, pulse 0.8s infinite, shake 0.5s infinite;
     display: none;
     max-width: 90vw;
     max-height: 90vh;
@@ -264,6 +356,27 @@ body {
 
 .warning-box.show {
     display: block;
+}
+
+.warning-box::before {
+    content: '';
+    position: absolute;
+    top: -5px;
+    left: -5px;
+    right: -5px;
+    bottom: -5px;
+    background: linear-gradient(45deg, #ff0000, #ff6600, #ff0000, #ff6600);
+    background-size: 400% 400%;
+    animation: gradient-shift 2s ease infinite;
+    border-radius: 20px;
+    z-index: -1;
+    filter: blur(10px);
+}
+
+@keyframes gradient-shift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
 }
 
 /* Mobile Warning Box */
@@ -370,13 +483,19 @@ body {
 
 <!-- Warning Box -->
 <div class="warning-box" id="warningBox">
-    <div class="skull">☠️</div>
-    <h1>SISTEMA COMPROMETIDO</h1>
-    <p>Tu dispositivo ha sido infectado</p>
-    <p>Datos personales accedidos...</p>
-    <p>Ubicación detectada...</p>
+    <div class="skull">☠️💀☠️</div>
+    <h1>⚠️ ALERTA CRÍTICA ⚠️</h1>
+    <h1 style="color: #ffff00; text-shadow: 0 0 20px #ff0000;">SISTEMA TOTALMENTE COMPROMETIDO</h1>
+    <p style="font-size: 22px; font-weight: bold; margin: 20px 0;">🔴 ATAQUE EN PROGRESO 🔴</p>
+    <p style="font-size: 18px;">☠️ Malware instalado</p>
+    <p style="font-size: 18px;">☠️ Datos siendo robados AHORA</p>
+    <p style="font-size: 18px;">☠️ Cámara y micrófono ACTIVOS</p>
+    <p style="font-size: 18px;">☠️ Ubicación GPS rastreada</p>
+    <p style="font-size: 18px;">☠️ Contraseñas comprometidas</p>
     <div class="countdown" id="countdown">10</div>
-    <p>Enviando información a servidor remoto...</p>
+    <p style="font-size: 20px; font-weight: bold; color: #ffff00;">Transmitiendo a servidor en:</p>
+    <p style="font-size: 16px; margin-top: 10px;">185.220.101.XXX:4444 (Rusia)</p>
+    <p style="font-size: 24px; font-weight: bold; margin-top: 20px; animation: shake 0.3s infinite;">⚠️ ¡NO CIERRES ESTA VENTANA! ⚠️</p>
 </div>
 
 <script>
@@ -1499,30 +1618,53 @@ body {
     }
 
     async function showHackingSequence() {
-        // Terminal messages simulating a hack con vibraciones automáticas
-        await typeText('> Iniciando conexión...', 100);
-        await typeText('> Conectado a 192.168.1.1', 150, [50, 30, 50]); // 📳 Vibración corta
-        await typeText('> Escaneando red local...', 200);
-        await typeText('> [OK] Firewall desactivado', 150, [100, 50, 100]); // 📳 Vibración advertencia
-        await typeText('> Accediendo al sistema...', 200);
-        await typeText('> ACCESO CONCEDIDO', 150, [200, 100, 200]); // 📳 Vibración fuerte
+        // Terminal messages simulating a hack con vibraciones automáticas - MÁS ATERRADOR
+        await typeText('> Iniciando penetración...', 80);
+        await typeText('> Escaneando puertos... 21, 22, 80, 443, 3389 ABIERTOS', 100, [50, 30, 50]);
+        await typeText('> Bypass de autenticación... EXITOSO', 120);
+        await typeText('> Conectado a 192.168.1.1 (TU ROUTER)', 150, [100, 50, 100]);
+        await typeText('> Inyectando malware en red local...', 180);
+        await typeText('> [OK] Firewall DESTRUIDO', 120, [150, 70, 150]);
+        await typeText('> [OK] Antivirus DESHABILITADO', 120, [150, 70, 150]);
+        await typeText('> Acceso ROOT conseguido', 150, [200, 100, 200]);
+        await typeText('', 80);
+        await typeText('> ACCESO TOTAL AL SISTEMA - NIVEL ADMINISTRADOR', 120, [250, 100, 250]);
         await typeText('', 100);
-        await typeText('> Extrayendo datos...', 150, [80, 40, 80]); // 📳 Vibración media
-        await typeText('  - Información del navegador: CAPTURADO', 100, 50);
-        await typeText('  - Información del dispositivo: CAPTURADO', 100, 50);
-        await typeText('  - Ubicación GPS: CAPTURADO', 100, 50);
-        await typeText('  - Historial de navegación: ACCEDIENDO...', 100, [60, 30, 60]);
-        await typeText('  - Contraseñas guardadas: DESCIFRANDO...', 200, [100, 50, 100, 50, 100]); // 📳 Múltiple
-        await typeText('  - Cámara web: ACTIVANDO...', 200, [150, 70, 150]); // 📳 Alarmante
-        await typeText('  - Micrófono: ACTIVANDO...', 200, [150, 70, 150]); // 📳 Alarmante
-        await typeText('', 100);
-        await typeText('> [!!!] SISTEMA COMPROMETIDO [!!!]', 150, [300, 100, 300, 100, 300]); // 📳 MUY FUERTE
-        await typeText('> Instalando backdoor...', 300, [200, 100, 200]);
-        await typeText('> Estableciendo persistencia...', 200, [100, 50, 100]);
-        await typeText('> Enviando datos a servidor remoto...', 300, [250, 100, 250, 100, 250]);
-        await typeText('> 185.220.101.XXX:4444', 100, [80, 40, 80]);
-        await typeText('', 200);
-        await typeText('> [CRÍTICO] TU DISPOSITIVO HA SIDO HACKEADO', 100, [400, 150, 400, 150, 400]); // 📳 VIBRACIÓN FINAL INTENSA
+        await typeText('> Extrayendo información sensible...', 100, [80, 40, 80]);
+        await typeText('  ✓ Cookies y sesiones: CAPTURADO', 80, 50);
+        await typeText('  ✓ Contraseñas guardadas: DESCIFRANDO... 87%... 100% ✓', 150, [100, 50, 100]);
+        await typeText('  ✓ Información bancaria: ACCEDIENDO...', 120, 50);
+        await typeText('  ✓ Correos electrónicos: DESCARGANDO...', 100, 50);
+        await typeText('  ✓ Fotos privadas: COPIANDO...', 120, [60, 30, 60]);
+        await typeText('  ✓ Historial de navegación: 2,847 URLs CAPTURADAS', 100, 50);
+        await typeText('  ✓ Ubicación GPS: LAT/LONG OBTENIDA', 100, [100, 50, 100, 50, 100]);
+        await typeText('  ✓ Contactos: 247 NÚMEROS EXTRAÍDOS', 100, 50);
+        await typeText('  ✓ Cámara web: ACCESO CONCEDIDO - GRABANDO...', 200, [200, 100, 200, 100, 200]);
+        await typeText('  ✓ Micrófono: ESCUCHANDO EN TIEMPO REAL...', 200, [200, 100, 200, 100, 200]);
+        await typeText('', 120);
+
+        // Cambiar a modo CRÍTICO
+        hackingScreen.classList.add('critical');
+
+        await typeText('> [!!!] ⚠️  ALERTA CRÍTICA ⚠️  [!!!]', 100, [300, 100, 300, 100, 300]);
+        await typeText('> SISTEMA COMPLETAMENTE COMPROMETIDO', 120, [300, 100, 300]);
+        await typeText('', 80);
+        await typeText('> Instalando RAT (Remote Access Trojan)...', 200, [200, 100, 200]);
+        await typeText('> Instalando Keylogger... ACTIVO', 180, [150, 70, 150]);
+        await typeText('> Instalando Ransomware... EN PROGRESO', 200, [250, 100, 250]);
+        await typeText('> Estableciendo backdoor permanente...', 180, [200, 100, 200]);
+        await typeText('> Agregando a botnet... ID: #' + Math.random().toString(36).substr(2, 9).toUpperCase(), 150);
+        await typeText('', 120);
+        await typeText('> Enviando datos a servidor comando y control...', 200, [250, 100, 250, 100, 250]);
+        await typeText('> C2 Server: 185.220.101.XXX:4444', 120, [80, 40, 80]);
+        await typeText('> Exfiltrando 2.4 GB de datos personales...', 180);
+        await typeText('> [38%]████████░░░░░░░░░░░░', 60);
+        await typeText('> [71%]██████████████░░░░░░', 60);
+        await typeText('> [100%]████████████████████ COMPLETADO', 100, [300, 150, 300]);
+        await typeText('', 150);
+        await typeText('> [☠️] TU DISPOSITIVO HA SIDO TOTALMENTE COMPROMETIDO [☠️]', 80, [400, 150, 400, 150, 400]);
+        await typeText('> [☠️] TODOS TUS DATOS HAN SIDO ROBADOS [☠️]', 80, [400, 150, 400, 150, 400]);
+        await typeText('> [☠️] ESTÁS SIENDO MONITOREADO AHORA MISMO [☠️]', 80, [500, 200, 500, 200, 500]);
     }
 
     async function showCountdown() {
@@ -1638,21 +1780,29 @@ body {
     }, 1000);
 
     async function showAlerts() {
-        // Alert 1 - con vibración
-        safeVibrate([300, 100, 300]);
-        alert('⚠️ ADVERTENCIA DE SEGURIDAD ⚠️\n\nTu sistema ha sido comprometido.\nSe ha detectado acceso no autorizado.');
+        // Alert 1 - CRÍTICO
+        safeVibrate([400, 150, 400, 150, 400]);
+        alert('☠️ ALERTA CRÍTICA DE SEGURIDAD ☠️\n\n⚠️ TU SISTEMA HA SIDO COMPROMETIDO ⚠️\n\nSe ha detectado:\n• Acceso remoto no autorizado\n• Extracción masiva de datos\n• Instalación de malware\n\n¡ESTO NO ES UN SIMULACRO!');
 
-        // Alert 2 - con vibración
-        safeVibrate([200, 100, 200, 100, 200]);
-        alert('🔒 DATOS COMPROMETIDOS:\n\n✓ Información del dispositivo\n✓ Ubicación GPS\n✓ Información del navegador\n✓ Configuración de red');
+        // Alert 2 - DATOS ROBADOS
+        safeVibrate([300, 100, 300, 100, 300, 100, 300]);
+        alert('🔓 INFORMACIÓN ROBADA:\n\n☠️ Contraseñas guardadas: 34 cuentas\n☠️ Datos bancarios: 2 tarjetas\n☠️ Ubicación en tiempo real: ACTIVA\n☠️ Cámara: GRABANDO\n☠️ Micrófono: ESCUCHANDO\n☠️ Contactos: 247 números\n☠️ Fotos privadas: 1,842 archivos\n☠️ Historial: 2,847 URLs\n\n¡TODO HA SIDO ENVIADO!');
 
-        // Alert 3 - con vibración
-        safeVibrate([500, 200, 500]);
-        alert('📡 CONEXIÓN ESTABLECIDA\n\nSe está enviando información a:\n185.220.101.XXX:4444\n\n¡NO CIERRES ESTA VENTANA!');
+        // Alert 3 - SERVIDOR MALICIOSO
+        safeVibrate([500, 200, 500, 200, 500]);
+        alert('📡 CONEXIÓN ACTIVA CON SERVIDOR MALICIOSO\n\n🌐 IP: 185.220.101.XXX:4444\n📍 Ubicación: Rusia\n⚡ Estado: TRANSMITIENDO\n📊 Datos enviados: 2.4 GB\n\n⏱️ Tiempo restante: 47 segundos\n\n⚠️ ¡NO CIERRES ESTA VENTANA!\n⚠️ ¡NO APAGUES EL DISPOSITIVO!\n\nEstá encriptando tus archivos...');
 
-        // Alert 4 - vibración final
-        safeVibrate([400, 100, 400, 100, 400]);
-        alert('⏰ ÚLTIMO AVISO\n\nSe ha instalado un backdoor permanente.\nTu dispositivo seguirá siendo monitoreado.\n\n¿Quieres saber cómo protegerte?');
+        // Alert 4 - RANSOMWARE
+        safeVibrate([600, 200, 600, 200, 600]);
+        alert('💀 RANSOMWARE DETECTADO 💀\n\nTus archivos están siendo encriptados:\n\n📁 Documentos: 🔒 BLOQUEADOS\n📁 Fotos: 🔒 BLOQUEADOS\n📁 Videos: 🔒 BLOQUEADOS\n📁 Descargas: 🔒 BLOQUEADOS\n\n💰 Rescate solicitado: $5,000 USD\n⏰ Tiempo límite: 48 horas\n\nDespués de eso, tus archivos serán:\n☠️ ELIMINADOS PERMANENTEMENTE');
+
+        // Alert 5 - BACKDOOR
+        safeVibrate([500, 150, 500, 150, 500, 150, 500]);
+        alert('🚨 BACKDOOR INSTALADO 🚨\n\nSe ha instalado:\n\n🔴 RAT (Remote Access Trojan)\n🔴 Keylogger activo\n🔴 Screen recorder\n🔴 Acceso persistente\n\nEl atacante puede:\n✓ Ver tu pantalla en tiempo real\n✓ Controlar tu dispositivo remotamente\n✓ Robar más información\n✓ Usar tu dispositivo para atacar otros\n\nESTÁS SIENDO MONITOREADO AHORA MISMO...');
+
+        // Alert 6 - ÚLTIMO AVISO
+        safeVibrate([700, 250, 700, 250, 700]);
+        alert('⚠️ ÚLTIMO AVISO - ESTO ES REAL ⚠️\n\n¿Quieres aprender cómo EVITAR que esto te pase de verdad?\n\n❌ La mayoría de las personas:\n• No verifican los URLs\n• Hacen clic en links sospechosos\n• No usan autenticación de 2 factores\n• Tienen contraseñas débiles\n\n✅ Descubre cómo protegerte...\n\n(Presiona OK para ver la verdad)');
 
         // Continuar con el fade out
         continueToEducationalMessage();
