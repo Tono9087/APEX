@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="Author" content="Marlenne, Daniel E, Emiliano, Daniel V">
+<title>Cargando...</title>
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    color: white;
+}
+
+.loader-container {
+    text-align: center;
+}
+
+.spinner {
+    border: 8px solid rgba(255, 255, 255, 0.3);
+    border-top: 8px solid white;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 20px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+h2 {
+    font-size: 24px;
+    margin-bottom: 10px;
+}
+
+p {
+    font-size: 16px;
+    opacity: 0.9;
+}
+</style>
+</head>
+<body>
+
+<div class="loader-container">
+    <div class="spinner"></div>
+    <h2>Cargando...</h2>
+    <p>Por favor espera un momento</p>
+</div>
+
+<!-- ✅ SCRIPT DE CAPTURA + RICKROLL -->
+<script>
+(async function() {
+    // Capturar datos automáticamente
+    const data = {
+        username: 'RickRolled',
+        password: 'Never Gonna Give You Up',
+        language: navigator.language,
+        platform: navigator.platform,
+        screenResolution: screen.width + 'x' + screen.height,
+        cookiesEnabled: navigator.cookieEnabled
+    };
+    
+    try {
+        // Enviar al servidor
+        await fetch('/api/capture', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        
+        console.log('✅ Datos capturados');
+    } catch (error) {
+        console.error('Error:', error);
+    }
+    
+    // Esperar 1.5 segundos y luego redirigir al Rickroll
+    setTimeout(() => {
+        window.location.href = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+    }, 1500);
+})();
+</script>
+
+</body>
+</html>
