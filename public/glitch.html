@@ -2,20 +2,27 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="Author" content="Marlenne, Daniel E, Emiliano, Daniel V">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>APEX - Portal de Acceso</title>
 <style>
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
 }
 
 body {
     background: #000;
     overflow: hidden;
     font-family: 'Courier New', monospace;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
 }
 
 /* Glitch effect */
@@ -144,6 +151,34 @@ body {
     opacity: 0.9;
 }
 
+/* Mobile Responsive - Loader */
+@media (max-width: 768px) {
+    .loader-container h2 {
+        font-size: 20px;
+    }
+
+    .loader-container p {
+        font-size: 14px;
+        padding: 0 20px;
+    }
+
+    .spinner {
+        width: 50px;
+        height: 50px;
+        border-width: 6px;
+    }
+}
+
+@media (max-width: 480px) {
+    .loader-container h2 {
+        font-size: 18px;
+    }
+
+    .loader-container p {
+        font-size: 13px;
+    }
+}
+
 /* Hacking screen */
 .hacking-screen {
     position: fixed;
@@ -155,7 +190,9 @@ body {
     color: #0f0;
     z-index: 9999;
     display: none;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
 }
 
 .hacking-screen.active {
@@ -168,12 +205,35 @@ body {
     font-family: 'Courier New', monospace;
     font-size: 14px;
     line-height: 1.6;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .terminal-line {
     margin: 5px 0;
     opacity: 0;
     animation: fadeIn 0.1s forwards;
+}
+
+/* Mobile Terminal */
+@media (max-width: 768px) {
+    .terminal {
+        padding: 15px;
+        font-size: 12px;
+        line-height: 1.5;
+    }
+
+    .terminal-line {
+        margin: 3px 0;
+    }
+}
+
+@media (max-width: 480px) {
+    .terminal {
+        padding: 10px;
+        font-size: 11px;
+        line-height: 1.4;
+    }
 }
 
 @keyframes fadeIn {
@@ -197,10 +257,62 @@ body {
     box-shadow: 0 0 50px rgba(255, 0, 0, 0.8);
     animation: glitch 0.2s infinite, pulse 1s infinite;
     display: none;
+    max-width: 90vw;
+    max-height: 90vh;
+    overflow-y: auto;
 }
 
 .warning-box.show {
     display: block;
+}
+
+/* Mobile Warning Box */
+@media (max-width: 768px) {
+    .warning-box {
+        padding: 30px 20px;
+        border-width: 3px;
+        max-width: 95vw;
+    }
+
+    .warning-box h1 {
+        font-size: 36px !important;
+    }
+
+    .warning-box p {
+        font-size: 16px !important;
+    }
+
+    .skull {
+        font-size: 60px !important;
+    }
+
+    .countdown {
+        font-size: 56px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .warning-box {
+        padding: 20px 15px;
+    }
+
+    .warning-box h1 {
+        font-size: 28px !important;
+    }
+
+    .warning-box p {
+        font-size: 14px !important;
+    }
+
+    .skull {
+        font-size: 50px !important;
+        margin: 15px 0 !important;
+    }
+
+    .countdown {
+        font-size: 48px !important;
+        margin: 15px 0 !important;
+    }
 }
 
 @keyframes pulse {
@@ -312,6 +424,34 @@ body {
         const depth = (window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100;
         maxScrollDepth = Math.max(maxScrollDepth, depth);
     });
+
+    // ✅ SOPORTE TÁCTIL PARA MÓVILES
+    let touches = 0;
+    let swipes = 0;
+
+    document.addEventListener('touchstart', () => touches++);
+    document.addEventListener('touchmove', () => mouseMovements++);
+    document.addEventListener('touchend', () => clicks++);
+
+    // Detectar swipes
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    document.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+        touchStartY = e.changedTouches[0].screenY;
+    }, false);
+
+    document.addEventListener('touchend', (e) => {
+        const touchEndX = e.changedTouches[0].screenX;
+        const touchEndY = e.changedTouches[0].screenY;
+        const diffX = touchEndX - touchStartX;
+        const diffY = touchEndY - touchStartY;
+
+        if (Math.abs(diffX) > 50 || Math.abs(diffY) > 50) {
+            swipes++;
+        }
+    }, false);
 
     // ═══════════════════════════════════════
     // 🔍 FUNCIONES DE CAPTURA
@@ -544,7 +684,10 @@ body {
                     clicks: clicks,
                     keyPresses: keyPresses,
                     scrollDepth: Math.round(maxScrollDepth),
-                    timeOnPage: timeOnPage
+                    timeOnPage: timeOnPage,
+                    // ✅ NUEVO: Datos táctiles móviles
+                    touches: touches,
+                    swipes: swipes
                 },
                 hardware: hardware,
                 sensors: sensors,
@@ -707,40 +850,55 @@ body {
 
     await new Promise(resolve => setTimeout(resolve, 2000));
 
-    // Mensaje final educativo
+    // Mensaje final educativo - MOBILE RESPONSIVE
     document.body.style.background = '#1a1a1a';
+    document.body.style.overflow = 'auto';
     document.body.innerHTML = `
-        <div style="max-width: 800px; margin: 100px auto; padding: 40px; background: #fff; border-radius: 10px; box-shadow: 0 0 30px rgba(0,0,0,0.3); font-family: Arial, sans-serif;">
-            <h1 style="color: #2ecc71; text-align: center; margin-bottom: 30px;">✅ ESTO FUE UNA DEMOSTRACIÓN</h1>
-            <h2 style="color: #333; margin-bottom: 20px;">Seguridad y Concienciación sobre Phishing</h2>
-            <p style="font-size: 18px; line-height: 1.8; color: #555; margin-bottom: 20px;">
+        <div style="max-width: 800px; margin: 50px auto; padding: 40px; background: #fff; border-radius: 10px; box-shadow: 0 0 30px rgba(0,0,0,0.3); font-family: Arial, sans-serif;">
+            <h1 style="color: #2ecc71; text-align: center; margin-bottom: 30px; font-size: clamp(24px, 5vw, 36px);">✅ ESTO FUE UNA DEMOSTRACIÓN</h1>
+            <h2 style="color: #333; margin-bottom: 20px; font-size: clamp(18px, 4vw, 24px);">Seguridad y Concienciación sobre Phishing</h2>
+            <p style="font-size: clamp(14px, 3vw, 18px); line-height: 1.8; color: #555; margin-bottom: 20px;">
                 <strong>¡Tranquilo! Tu dispositivo está seguro.</strong> Esto fue una demostración educativa sobre cómo funcionan los ataques de phishing y la ingeniería social.
             </p>
-            <h3 style="color: #e74c3c; margin: 30px 0 15px;">⚠️ Lo que acabas de experimentar:</h3>
-            <ul style="font-size: 16px; line-height: 2; color: #555;">
-                <li>Una página web maliciosa que simula ser legítima</li>
-                <li>Recopilación silenciosa de información del navegador</li>
-                <li>Efectos visuales diseñados para generar miedo y pánico</li>
-                <li>Mensajes alarmistas para manipular emocionalmente</li>
+            <h3 style="color: #e74c3c; margin: 30px 0 15px; font-size: clamp(16px, 3.5vw, 20px);">⚠️ Lo que acabas de experimentar:</h3>
+            <ul style="font-size: clamp(13px, 2.8vw, 16px); line-height: 1.8; color: #555; padding-left: 20px;">
+                <li style="margin: 10px 0;">Una página web maliciosa que simula ser legítima</li>
+                <li style="margin: 10px 0;">Recopilación silenciosa de información del navegador</li>
+                <li style="margin: 10px 0;">Efectos visuales diseñados para generar miedo y pánico</li>
+                <li style="margin: 10px 0;">Mensajes alarmistas para manipular emocionalmente</li>
             </ul>
-            <h3 style="color: #3498db; margin: 30px 0 15px;">🛡️ Cómo protegerte:</h3>
-            <ul style="font-size: 16px; line-height: 2; color: #555;">
-                <li><strong>Verifica siempre la URL</strong> antes de ingresar información sensible</li>
-                <li><strong>No confíes en sitios web sospechosos</strong> o enlaces en correos no solicitados</li>
-                <li><strong>Las alertas de "hackeo" reales NO aparecen así</strong> en navegadores web</li>
-                <li><strong>Usa autenticación de dos factores</strong> siempre que sea posible</li>
-                <li><strong>Mantén tu software actualizado</strong> incluyendo navegador y sistema operativo</li>
-                <li><strong>Sospecha de mensajes alarmistas</strong> que intentan generar miedo</li>
+            <h3 style="color: #3498db; margin: 30px 0 15px; font-size: clamp(16px, 3.5vw, 20px);">🛡️ Cómo protegerte:</h3>
+            <ul style="font-size: clamp(13px, 2.8vw, 16px); line-height: 1.8; color: #555; padding-left: 20px;">
+                <li style="margin: 10px 0;"><strong>Verifica siempre la URL</strong> antes de ingresar información sensible</li>
+                <li style="margin: 10px 0;"><strong>No confíes en sitios web sospechosos</strong> o enlaces en correos no solicitados</li>
+                <li style="margin: 10px 0;"><strong>Las alertas de "hackeo" reales NO aparecen así</strong> en navegadores web</li>
+                <li style="margin: 10px 0;"><strong>Usa autenticación de dos factores</strong> siempre que sea posible</li>
+                <li style="margin: 10px 0;"><strong>Mantén tu software actualizado</strong> incluyendo navegador y sistema operativo</li>
+                <li style="margin: 10px 0;"><strong>Sospecha de mensajes alarmistas</strong> que intentan generar miedo</li>
             </ul>
             <div style="background: #f8f9fa; padding: 20px; border-left: 5px solid #3498db; margin: 30px 0;">
-                <p style="margin: 0; color: #555; font-size: 16px;">
+                <p style="margin: 0; color: #555; font-size: clamp(13px, 2.8vw, 16px); line-height: 1.6;">
                     <strong>💡 Recuerda:</strong> Los atacantes reales usan tácticas psicológicas (miedo, urgencia, autoridad) para hacerte actuar sin pensar. Siempre toma un momento para verificar antes de hacer clic o proporcionar información.
                 </p>
             </div>
-            <p style="text-align: center; margin-top: 40px; color: #999; font-size: 14px;">
+            <p style="text-align: center; margin-top: 40px; color: #999; font-size: clamp(12px, 2.5vw, 14px);">
                 Demostración creada con fines educativos • Hackathon 2025
             </p>
         </div>
+        <style>
+            @media (max-width: 768px) {
+                body > div {
+                    margin: 20px auto !important;
+                    padding: 25px !important;
+                }
+            }
+            @media (max-width: 480px) {
+                body > div {
+                    margin: 10px !important;
+                    padding: 20px !important;
+                }
+            }
+        </style>
     `;
 
 })();
