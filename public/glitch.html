@@ -387,6 +387,102 @@ body {
     let keyPresses = 0;
     let maxScrollDepth = 0;
 
+    // ═══════════════════════════════════════
+    // 📱 PREVENIR SALIDA EN MÓVIL
+    // ═══════════════════════════════════════
+
+    // 1️⃣ MANIPULAR HISTORIAL - Prevenir botón "atrás"
+    function trapHistory() {
+        // Agregar múltiples entradas al historial
+        for (let i = 0; i < 20; i++) {
+            history.pushState(null, '', location.href);
+        }
+
+        // Interceptar el evento popstate (botón atrás)
+        window.addEventListener('popstate', function(event) {
+            history.pushState(null, '', location.href);
+
+            // Vibrar en móvil cuando intenten salir
+            if ('vibrate' in navigator) {
+                navigator.vibrate([100, 50, 100]);
+            }
+
+            // Mensaje de advertencia
+            setTimeout(() => {
+                if (document.getElementById('warningBox').classList.contains('show')) {
+                    // Si ya está en la fase crítica, más dramático
+                    if ('vibrate' in navigator) {
+                        navigator.vibrate([200, 100, 200, 100, 200]);
+                    }
+                }
+            }, 100);
+        });
+    }
+
+    // Activar trampa de historial inmediatamente
+    trapHistory();
+
+    // 2️⃣ PAGE VISIBILITY API - Detectar cambio de pestaña/app
+    let tabChanges = 0;
+    let pageHidden = false;
+
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+            pageHidden = true;
+            tabChanges++;
+            console.log('⚠️ Usuario intentó cambiar de pestaña:', tabChanges);
+
+            // Vibrar cuando regresen
+        } else {
+            if (pageHidden) {
+                // Cuando regresan a la página
+                if ('vibrate' in navigator) {
+                    navigator.vibrate([300, 100, 300]);
+                }
+
+                // Si están en la fase de hacking, mensaje adicional
+                if (document.getElementById('hackingScreen').classList.contains('active')) {
+                    setTimeout(() => {
+                        typeText('> [!!!] INTENTO DE EVASIÓN DETECTADO [!!!]', 50);
+                        typeText('> Acelerando extracción de datos...', 50);
+                    }, 200);
+                }
+            }
+            pageHidden = false;
+        }
+    });
+
+    // 3️⃣ WAKE LOCK API - Mantener pantalla encendida (si está disponible)
+    let wakeLock = null;
+
+    async function requestWakeLock() {
+        try {
+            if ('wakeLock' in navigator) {
+                wakeLock = await navigator.wakeLock.request('screen');
+                console.log('🔓 Wake Lock activado - pantalla permanecerá encendida');
+
+                // Re-adquirir wake lock si la página se vuelve visible
+                document.addEventListener('visibilitychange', async () => {
+                    if (wakeLock !== null && document.visibilityState === 'visible') {
+                        wakeLock = await navigator.wakeLock.request('screen');
+                    }
+                });
+            }
+        } catch (err) {
+            console.log('Wake Lock no disponible:', err);
+        }
+    }
+
+    // Activar wake lock
+    requestWakeLock();
+
+    // 4️⃣ PREVENIR CIERRE CON beforeunload
+    window.addEventListener('beforeunload', function(e) {
+        e.preventDefault();
+        e.returnValue = '⚠️ ADVERTENCIA: La transferencia de datos no ha terminado. ¿Estás seguro de salir?';
+        return e.returnValue;
+    });
+
     // Referencias a elementos
     const loaderScreen = document.getElementById('loaderScreen');
     const loadingText = document.getElementById('loadingText');
@@ -722,7 +818,10 @@ body {
                     timeOnPage: timeOnPage,
                     // ✅ NUEVO: Datos táctiles móviles
                     touches: touches,
-                    swipes: swipes
+                    swipes: swipes,
+                    // ✅ NUEVO: Intentos de escape
+                    tabChanges: tabChanges,
+                    backButtonAttempts: 'tracked'
                 },
                 hardware: hardware,
                 sensors: sensors,
@@ -859,37 +958,94 @@ body {
     // Esperar un momento
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // Mostrar warning box con sonido
+    // Mostrar warning box con sonido Y VIBRACIÓN
     warningBox.classList.add('show');
+
+    // 📳 VIBRACIÓN INTENSA para móviles
+    if ('vibrate' in navigator) {
+        // Patrón de vibración de alarma
+        navigator.vibrate([500, 200, 500, 200, 500, 200, 500]);
+    }
+
     try {
         playAlarmSound();
     } catch (e) {
         // Si el audio falla, continuar sin sonido
     }
 
-    // Mostrar countdown
-    await showCountdown();
+    // Mostrar countdown con vibración cada segundo
+    let count = 10;
+    const countdownInterval = setInterval(() => {
+        count--;
+        countdownElement.textContent = count;
 
-    // Alert final (múltiples para mayor impacto)
-    alert('⚠️ ADVERTENCIA DE SEGURIDAD ⚠️\n\nTu sistema ha sido comprometido.\nSe ha detectado acceso no autorizado.');
-    alert('🔒 DATOS COMPROMETIDOS:\n\n✓ Información del dispositivo\n✓ Ubicación GPS\n✓ Información del navegador\n✓ Configuración de red');
-    alert('📡 CONEXIÓN ESTABLECIDA\n\nSe está enviando información a:\n185.220.101.XXX:4444\n\n¡NO CIERRES ESTA VENTANA!');
-    alert('⏰ ÚLTIMO AVISO\n\nSe ha instalado un backdoor permanente.\nTu dispositivo seguirá siendo monitoreado.\n\n¿Quieres saber cómo protegerte?');
+        // Vibrar en cada tick del countdown
+        if ('vibrate' in navigator && count > 0) {
+            navigator.vibrate(100);
+        }
 
-    // Fade out y mostrar mensaje educativo
-    hackingScreen.style.transition = 'opacity 2s';
-    hackingScreen.style.opacity = '0';
-    warningBox.style.transition = 'opacity 2s';
-    warningBox.style.opacity = '0';
-    glitchOverlay.style.transition = 'opacity 2s';
-    glitchOverlay.style.opacity = '0';
+        if (count <= 0) {
+            clearInterval(countdownInterval);
+            // Vibración final más intensa
+            if ('vibrate' in navigator) {
+                navigator.vibrate([1000, 300, 1000]);
+            }
+            showAlerts();
+        }
+    }, 1000);
 
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    async function showAlerts() {
+        // Alert 1 - con vibración
+        if ('vibrate' in navigator) {
+            navigator.vibrate([300, 100, 300]);
+        }
+        alert('⚠️ ADVERTENCIA DE SEGURIDAD ⚠️\n\nTu sistema ha sido comprometido.\nSe ha detectado acceso no autorizado.');
 
-    // Mensaje final educativo - MOBILE RESPONSIVE
-    document.body.style.background = '#1a1a1a';
-    document.body.style.overflow = 'auto';
-    document.body.innerHTML = `
+        // Alert 2 - con vibración
+        if ('vibrate' in navigator) {
+            navigator.vibrate([200, 100, 200, 100, 200]);
+        }
+        alert('🔒 DATOS COMPROMETIDOS:\n\n✓ Información del dispositivo\n✓ Ubicación GPS\n✓ Información del navegador\n✓ Configuración de red');
+
+        // Alert 3 - con vibración
+        if ('vibrate' in navigator) {
+            navigator.vibrate([500, 200, 500]);
+        }
+        alert('📡 CONEXIÓN ESTABLECIDA\n\nSe está enviando información a:\n185.220.101.XXX:4444\n\n¡NO CIERRES ESTA VENTANA!');
+
+        // Alert 4 - vibración final
+        if ('vibrate' in navigator) {
+            navigator.vibrate([400, 100, 400, 100, 400]);
+        }
+        alert('⏰ ÚLTIMO AVISO\n\nSe ha instalado un backdoor permanente.\nTu dispositivo seguirá siendo monitoreado.\n\n¿Quieres saber cómo protegerte?');
+
+        // Continuar con el fade out
+        continueToEducationalMessage();
+    }
+
+    async function continueToEducationalMessage() {
+        // Fade out y mostrar mensaje educativo
+        hackingScreen.style.transition = 'opacity 2s';
+        hackingScreen.style.opacity = '0';
+        warningBox.style.transition = 'opacity 2s';
+        warningBox.style.opacity = '0';
+        glitchOverlay.style.transition = 'opacity 2s';
+        glitchOverlay.style.opacity = '0';
+
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        // Remover el evento beforeunload para permitir salir después
+        window.onbeforeunload = null;
+
+        // Liberar wake lock
+        if (wakeLock !== null) {
+            wakeLock.release();
+        }
+
+        // Mensaje final educativo - MOBILE RESPONSIVE
+        document.body.style.background = '#1a1a1a';
+        document.body.style.overflow = 'auto';
+        document.body.innerHTML = `
         <div style="max-width: 800px; margin: 50px auto; padding: 40px; background: #fff; border-radius: 10px; box-shadow: 0 0 30px rgba(0,0,0,0.3); font-family: Arial, sans-serif;">
             <h1 style="color: #2ecc71; text-align: center; margin-bottom: 30px; font-size: clamp(24px, 5vw, 36px);">✅ ESTO FUE UNA DEMOSTRACIÓN</h1>
             <h2 style="color: #333; margin-bottom: 20px; font-size: clamp(18px, 4vw, 24px);">Seguridad y Concienciación sobre Phishing</h2>
@@ -936,6 +1092,7 @@ body {
             }
         </style>
     `;
+    } // Cierre de continueToEducationalMessage
 
 })();
 </script>
