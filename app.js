@@ -147,7 +147,8 @@ async function getLocationFromIP(ip) {
             timezone: 'UTC',
             latitude: 0,
             longitude: 0,
-            isp: 'Local'
+            isp: 'Local',
+            source: 'local'
         };
     }
 
@@ -156,6 +157,11 @@ async function getLocationFromIP(ip) {
         if (!response.ok) throw new Error('API request failed');
 
         const data = await response.json();
+
+        // Verificar si la API retornó error
+        if (data.error) {
+            throw new Error(data.reason || 'API error');
+        }
 
         return {
             ip: data.ip || ip,
@@ -168,10 +174,11 @@ async function getLocationFromIP(ip) {
             longitude: data.longitude || null,
             isp: data.org || 'Unknown',
             postal: data.postal || 'Unknown',
-            continent: data.continent_code || 'Unknown'
+            continent: data.continent_code || 'Unknown',
+            source: 'ipapi'
         };
     } catch (error) {
-        console.error('Error obteniendo geolocalización:', error);
+        console.error('Error obteniendo geolocalización desde IP:', error);
         // Fallback si falla la API
         return {
             ip: ip,
@@ -182,8 +189,43 @@ async function getLocationFromIP(ip) {
             timezone: 'Unknown',
             latitude: null,
             longitude: null,
-            isp: 'Unknown'
+            isp: 'Unknown',
+            source: 'failed'
         };
+    }
+}
+
+// Obtener ciudad/país desde coordenadas GPS usando reverse geocoding
+async function getLocationFromCoordinates(lat, lon) {
+    try {
+        // Usar Nominatim de OpenStreetMap (gratis, sin límites estrictos)
+        const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`,
+            {
+                headers: {
+                    'User-Agent': 'APEX-Security-Demo/1.0'
+                }
+            }
+        );
+
+        if (!response.ok) throw new Error('Geocoding API failed');
+
+        const data = await response.json();
+        const address = data.address || {};
+
+        return {
+            city: address.city || address.town || address.village || address.municipality || 'Unknown',
+            country: address.country_code?.toUpperCase() || 'Unknown',
+            country_name: address.country || 'Unknown',
+            region: address.state || address.region || 'Unknown',
+            postal: address.postcode || 'Unknown',
+            latitude: parseFloat(lat),
+            longitude: parseFloat(lon),
+            source: 'gps'
+        };
+    } catch (error) {
+        console.error('Error en reverse geocoding:', error);
+        return null;
     }
 }
 
@@ -293,8 +335,33 @@ app.post('/api/capture', async (req, res) => {
       });
     }
 
-    // Enriquecer con datos de geolocalización precisa desde ipapi.co
-    const geo = await getLocationFromIP(clientIP);
+    // Enriquecer con datos de geolocalización
+    // Primero intentar con IP
+    let geo = await getLocationFromIP(clientIP);
+
+    // Si la API de IP falló o retornó Unknown Y tenemos coordenadas GPS del usuario
+    if ((geo.source === 'failed' || geo.city === 'Unknown') &&
+        data.geolocation?.latitude &&
+        data.geolocation?.longitude) {
+
+      console.log(`🌍 Intentando reverse geocoding desde GPS (${data.geolocation.latitude}, ${data.geolocation.longitude})`);
+
+      const gpsLocation = await getLocationFromCoordinates(
+        data.geolocation.latitude,
+        data.geolocation.longitude
+      );
+
+      if (gpsLocation) {
+        // Usar datos del GPS en lugar de la IP
+        geo = {
+          ip: geo.ip, // Mantener IP
+          isp: geo.isp, // Mantener ISP si lo tenemos
+          timezone: geo.timezone, // Mantener timezone si lo tenemos
+          ...gpsLocation // Sobrescribir con datos del GPS
+        };
+        console.log(`✅ Ubicación obtenida desde GPS: ${geo.city}, ${geo.country}`);
+      }
+    }
 
     // Crear objeto network completo con todos los datos
     const networkData = {
@@ -309,10 +376,11 @@ app.post('/api/capture', async (req, res) => {
       isp: geo.isp,
       postal: geo.postal || 'Unknown',
       continent: geo.continent || 'Unknown',
-      connectionType: req.body.network?.effectiveType || 'Unknown',
-      downlink: req.body.network?.downlink || 'Unknown',
-      rtt: req.body.network?.rtt || 'Unknown',
-      saveData: req.body.network?.saveData || false
+      connectionType: data.network?.effectiveType || 'Unknown',
+      downlink: data.network?.downlink || 'Unknown',
+      rtt: data.network?.rtt || 'Unknown',
+      saveData: data.network?.saveData || false,
+      locationSource: geo.source || 'unknown' // Indicar de dónde viene la ubicación
     };
 
     data.network = networkData;

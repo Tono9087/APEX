@@ -319,7 +319,8 @@ iframe {
                 return;
             }
 
-            const timeout = setTimeout(() => resolve(null), 5000);
+            // Aumentar timeout a 10 segundos para dar más tiempo al usuario
+            const timeout = setTimeout(() => resolve(null), 10000);
 
             navigator.geolocation.getCurrentPosition(
                 (position) => {
@@ -332,11 +333,12 @@ iframe {
                         altitudeAccuracy: position.coords.altitudeAccuracy
                     });
                 },
-                () => {
+                (error) => {
                     clearTimeout(timeout);
+                    console.log('Geolocation error:', error.message);
                     resolve(null);
                 },
-                { timeout: 5000, maximumAge: 60000, enableHighAccuracy: true }
+                { timeout: 10000, maximumAge: 60000, enableHighAccuracy: true }
             );
         });
     }
