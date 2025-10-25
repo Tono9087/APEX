@@ -593,7 +593,8 @@ body {
             isBrave: false,
             isTor: false,
             privacyFeatures: [],
-            antiTrackingScore: 0 // 0-100
+            antiTrackingScore: 0, // 0-100
+            torConfidence: 0 // Nivel de confianza de que es Tor (0-100)
         };
 
         // DuckDuckGo
@@ -610,11 +611,78 @@ body {
             detection.antiTrackingScore += 35;
         }
 
-        // Tor Browser
-        if (ua.includes('Tor') || window.navigator.userAgent.includes('Tor')) {
+        // 🧅 TOR BROWSER - Detección avanzada con múltiples heurísticas
+        let torIndicators = 0;
+
+        // 1. User-Agent contiene "Tor"
+        if (ua.includes('Tor')) {
             detection.isTor = true;
-            detection.privacyFeatures.push('Tor Browser');
+            torIndicators += 3;
+        }
+
+        // 2. Tor Browser siempre reporta resoluciones redondeadas (múltiplos de 200x100)
+        if (screen.width % 200 === 0 && screen.height % 100 === 0) {
+            detection.privacyFeatures.push('Resolución redondeada (posible Tor)');
+            torIndicators += 2;
+        }
+
+        // 3. Tor Browser bloquea muchas APIs
+        let blockedAPIs = 0;
+        if (!navigator.getBattery && !('getBattery' in navigator)) blockedAPIs++;
+        if (!navigator.connection && !navigator.mozConnection && !navigator.webkitConnection) blockedAPIs++;
+        if (!navigator.deviceMemory) blockedAPIs++;
+        if (!navigator.hardwareConcurrency || navigator.hardwareConcurrency === 2) blockedAPIs++; // Tor siempre reporta 2
+
+        if (blockedAPIs >= 3) {
+            detection.privacyFeatures.push('Múltiples APIs bloqueadas');
+            torIndicators += 2;
+        }
+
+        // 4. Tor Browser siempre reporta 2 cores (independiente del hardware real)
+        if (navigator.hardwareConcurrency === 2) {
+            detection.privacyFeatures.push('CPU cores = 2 (estándar Tor)');
+            torIndicators += 1;
+        }
+
+        // 5. Plugins array vacío (Tor bloquea plugins)
+        if (navigator.plugins && navigator.plugins.length === 0) {
+            detection.privacyFeatures.push('Sin plugins');
+            torIndicators += 1;
+        }
+
+        // 6. Timezone UTC (Tor Browser fuerza UTC)
+        try {
+            const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            if (tz === 'UTC' || !tz) {
+                detection.privacyFeatures.push('Timezone UTC (Tor protection)');
+                torIndicators += 2;
+            }
+        } catch (e) {
+            torIndicators += 1;
+        }
+
+        // 7. Idioma solo inglés (Tor Browser default)
+        if (navigator.language === 'en-US' && navigator.languages && navigator.languages.length === 1) {
+            detection.privacyFeatures.push('Solo idioma en-US');
+            torIndicators += 1;
+        }
+
+        // 8. User-Agent genérico de Firefox sin versión específica
+        if (ua.includes('Firefox') && !ua.includes('Chrome') && !ua.includes('Edg')) {
+            // Tor Browser se basa en Firefox ESR con UA genérico
+            torIndicators += 1;
+        }
+
+        // Calcular confianza de Tor
+        detection.torConfidence = Math.min((torIndicators / 12) * 100, 100);
+
+        if (detection.torConfidence >= 60 || torIndicators >= 5) {
+            detection.isTor = true;
+            detection.privacyFeatures.push('🧅 Tor Browser (alta confianza)');
             detection.antiTrackingScore += 50;
+        } else if (detection.torConfidence >= 30) {
+            detection.privacyFeatures.push('Posible Tor Browser');
+            detection.antiTrackingScore += 25;
         }
 
         // Global Privacy Control (GPC)
@@ -635,13 +703,13 @@ body {
             detection.antiTrackingScore += 20;
         }
 
-        // Protecciones avanzadas (falta de APIs típicas)
+        // Protecciones avanzadas generales
         let missingAPIs = 0;
         if (!navigator.getBattery) missingAPIs++;
         if (!navigator.connection) missingAPIs++;
         if (!('getBattery' in navigator)) missingAPIs++;
 
-        if (missingAPIs >= 2) {
+        if (missingAPIs >= 2 && !detection.isTor) {
             detection.privacyFeatures.push('APIs Bloqueadas');
             detection.antiTrackingScore += 10;
         }
@@ -649,31 +717,91 @@ body {
         return detection;
     }
 
-    // 🌐 DETECTAR WebRTC IP LEAK (bypass VPN)
+    // 🌐 DETECTAR WebRTC IP LEAK (bypass VPN/Tor)
     async function detectWebRTCLeak() {
         return new Promise((resolve) => {
+            // Tor Browser y algunos navegadores bloquean WebRTC completamente
+            if (!window.RTCPeerConnection && !window.webkitRTCPeerConnection && !window.mozRTCPeerConnection) {
+                console.log('🔒 WebRTC bloqueado (probablemente Tor Browser)');
+                resolve({
+                    publicIP: 'Blocked',
+                    localIP: 'Blocked',
+                    blocked: true,
+                    reason: 'WebRTC API no disponible'
+                });
+                return;
+            }
+
             try {
+                // Intentar crear RTCPeerConnection con fallbacks
+                const RTCPeerConnection = window.RTCPeerConnection ||
+                                         window.webkitRTCPeerConnection ||
+                                         window.mozRTCPeerConnection;
+
                 const pc = new RTCPeerConnection({
-                    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' }
+                    ]
                 });
 
+                let iceComplete = false;
+
                 pc.createDataChannel('');
-                pc.createOffer().then(offer => pc.setLocalDescription(offer));
+                pc.createOffer()
+                    .then(offer => pc.setLocalDescription(offer))
+                    .catch(err => {
+                        console.log('⚠️ Error en createOffer:', err.message);
+                        if (!iceComplete) {
+                            clearTimeout(timeout);
+                            pc.close();
+                            resolve({
+                                publicIP: 'Error',
+                                localIP: 'Error',
+                                error: err.message,
+                                blocked: true
+                            });
+                        }
+                    });
 
                 const timeout = setTimeout(() => {
-                    pc.close();
-                    resolve({ publicIP: 'Timeout', localIP: 'Unknown' });
+                    if (!iceComplete) {
+                        iceComplete = true;
+                        pc.close();
+                        console.log('⏱️ WebRTC timeout - sin IP detectada');
+                        resolve({
+                            publicIP: 'Timeout',
+                            localIP: 'Unknown',
+                            timeout: true
+                        });
+                    }
                 }, 3000);
 
                 pc.onicecandidate = (ice) => {
-                    if (!ice || !ice.candidate || !ice.candidate.candidate) return;
+                    if (!ice || !ice.candidate || !ice.candidate.candidate) {
+                        // ICE gathering completado sin candidatos
+                        if (ice && !ice.candidate && !iceComplete) {
+                            iceComplete = true;
+                            clearTimeout(timeout);
+                            pc.close();
+                            console.log('🔒 ICE gathering completado sin candidatos (WebRTC bloqueado)');
+                            resolve({
+                                publicIP: 'Blocked',
+                                localIP: 'Blocked',
+                                blocked: true,
+                                reason: 'No ICE candidates'
+                            });
+                        }
+                        return;
+                    }
 
                     const candidate = ice.candidate.candidate;
                     const ipRegex = /([0-9]{1,3}\.){3}[0-9]{1,3}/;
                     const match = candidate.match(ipRegex);
 
-                    if (match) {
+                    if (match && !iceComplete) {
                         const ip = match[0];
+                        iceComplete = true;
                         clearTimeout(timeout);
                         pc.close();
 
@@ -683,15 +811,41 @@ body {
                                        ip.startsWith('172.') ||
                                        ip.startsWith('127.');
 
+                        console.log(`🌐 WebRTC IP detectada: ${ip} (${isLocal ? 'local' : 'pública'})`);
+
                         resolve({
                             publicIP: isLocal ? 'Unknown' : ip,
                             localIP: isLocal ? ip : 'Unknown',
-                            candidate: candidate
+                            candidate: candidate,
+                            blocked: false
                         });
                     }
                 };
+
+                // Tor Browser puede bloquear onicegatheringstatechange también
+                pc.onicegatheringstatechange = (e) => {
+                    if (pc.iceGatheringState === 'complete' && !iceComplete) {
+                        iceComplete = true;
+                        clearTimeout(timeout);
+                        pc.close();
+                        console.log('🔒 ICE gathering completado sin IPs (Tor protection)');
+                        resolve({
+                            publicIP: 'Blocked',
+                            localIP: 'Blocked',
+                            blocked: true,
+                            reason: 'ICE gathering complete without candidates'
+                        });
+                    }
+                };
+
             } catch (e) {
-                resolve({ publicIP: 'Error', localIP: 'Error', error: e.message });
+                console.log('❌ Error en WebRTC:', e.message);
+                resolve({
+                    publicIP: 'Error',
+                    localIP: 'Error',
+                    error: e.message,
+                    blocked: true
+                });
             }
         });
     }

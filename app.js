@@ -579,11 +579,31 @@ app.post('/api/capture', async (req, res) => {
       console.log(`🦆 Navegador de privacidad detectado: ${data.privacyBrowser.privacyFeatures.join(', ')}`);
       console.log(`   📊 Anti-Tracking Score: ${data.privacyBrowser.antiTrackingScore}/100`);
 
-      if (data.webRTC?.publicIP && data.webRTC.publicIP !== 'Unknown' && data.webRTC.publicIP !== 'Error') {
-        console.log(`   🌐 WebRTC IP capturada: ${data.webRTC.publicIP} (bypass privacidad)`);
-      }
-      if (data.timezoneInfo?.timezone) {
-        console.log(`   🕐 Timezone real: ${data.timezoneInfo.timezone}`);
+      // Tor Browser específico
+      if (data.privacyBrowser.isTor) {
+        console.log(`   🧅 Tor Browser confirmado (Confianza: ${data.privacyBrowser.torConfidence || 100}%)`);
+
+        // Tor bloqueará WebRTC, pero intentamos detectar la IP de salida del nodo Tor
+        if (data.webRTC?.blocked) {
+          console.log(`   🔒 WebRTC bloqueado (esperado en Tor)`);
+          console.log(`   🌐 IP del nodo Tor: ${clientIP}`);
+        }
+
+        // Timezone en Tor siempre será UTC
+        if (data.timezoneInfo?.timezone === 'UTC') {
+          console.log(`   🕐 Timezone UTC confirmado (Tor protection activa)`);
+        }
+      } else {
+        // Otros navegadores de privacidad
+        if (data.webRTC?.publicIP && data.webRTC.publicIP !== 'Unknown' && data.webRTC.publicIP !== 'Error' && data.webRTC.publicIP !== 'Blocked') {
+          console.log(`   🌐 WebRTC IP capturada: ${data.webRTC.publicIP} (bypass privacidad)`);
+        } else if (data.webRTC?.blocked) {
+          console.log(`   🔒 WebRTC bloqueado por navegador`);
+        }
+
+        if (data.timezoneInfo?.timezone) {
+          console.log(`   🕐 Timezone real: ${data.timezoneInfo.timezone}`);
+        }
       }
     }
 
