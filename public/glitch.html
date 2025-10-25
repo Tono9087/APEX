@@ -2037,7 +2037,7 @@ html {
     }
 
     async function continueToEducationalMessage() {
-        // Fade out y mostrar mensaje educativo
+        // Fade out y mostrar logo APEX
         hackingScreen.style.transition = 'opacity 2s';
         hackingScreen.style.opacity = '0';
         warningBox.style.transition = 'opacity 2s';
@@ -2055,77 +2055,19 @@ html {
             wakeLock.release();
         }
 
-        // Mensaje final educativo - MOBILE RESPONSIVE
-        document.body.style.background = '#1a1a1a';
+        // Mostrar solo el logo APEX
+        document.body.style.background = '#0a0e27';
         document.body.style.overflow = 'auto';
         document.body.innerHTML = `
-        <div style="max-width: 800px; margin: 50px auto; padding: 40px; background: #fff; border-radius: 10px; box-shadow: 0 0 30px rgba(0,0,0,0.3); font-family: Arial, sans-serif;">
-            <div style="text-align: center; margin-bottom: 30px;">
-                <img src="APEX.png" alt="APEX Security" style="max-width: 300px; width: 100%; height: auto; margin: 0 auto; display: block;">
+        <div style="display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px;">
+            <div style="text-align: center;">
+                <img src="APEX.png" alt="APEX Security" style="max-width: 500px; width: 100%; height: auto; margin: 0 auto; display: block; animation: fadeIn 1.5s ease-in;">
             </div>
-            <h1 style="color: #2ecc71; text-align: center; margin-bottom: 30px; font-size: clamp(24px, 5vw, 36px);">✅ ESTO FUE UNA DEMOSTRACIÓN</h1>
-            <h2 style="color: #333; margin-bottom: 20px; font-size: clamp(18px, 4vw, 24px);">Browser Fingerprinting y Privacidad Web</h2>
-            <p style="font-size: clamp(14px, 3vw, 18px); line-height: 1.8; color: #555; margin-bottom: 20px;">
-                <strong>¡Tranquilo! Tu dispositivo está seguro.</strong> Esto fue una demostración educativa sobre cómo los sitios web pueden rastrearte usando técnicas de <strong>browser fingerprinting</strong>.
-            </p>
-            <h3 style="color: #e74c3c; margin: 30px 0 15px; font-size: clamp(16px, 3.5vw, 20px);">📊 Lo que realmente capturamos:</h3>
-            <ul style="font-size: clamp(13px, 2.8vw, 16px); line-height: 1.8; color: #555; padding-left: 20px;">
-                <li style="margin: 10px 0;"><strong>User-Agent:</strong> Navegador, versión, sistema operativo</li>
-                <li style="margin: 10px 0;"><strong>Pantalla:</strong> Resolución, profundidad de color, orientación</li>
-                <li style="margin: 10px 0;"><strong>Hardware:</strong> Cores de CPU, memoria RAM, puntos táctiles</li>
-                <li style="margin: 10px 0;"><strong>Timezone:</strong> Zona horaria real (revela ubicación aproximada)</li>
-                <li style="margin: 10px 0;"><strong>Batería:</strong> Nivel y estado de carga (si está disponible)</li>
-                <li style="margin: 10px 0;"><strong>Red:</strong> Tipo de conexión, velocidad estimada</li>
-                <li style="margin: 10px 0;"><strong>Canvas Fingerprint:</strong> ID único basado en renderizado</li>
-                <li style="margin: 10px 0;"><strong>Comportamiento:</strong> Movimientos, clicks, tiempo en página</li>
-                <li style="margin: 10px 0;"><strong>WebRTC Leak:</strong> Tu IP real (si no está bloqueado)</li>
-            </ul>
-            <h3 style="color: #3498db; margin: 30px 0 15px; font-size: clamp(16px, 3.5vw, 20px);">🛡️ Cómo protegerte del rastreo:</h3>
-            <ul style="font-size: clamp(13px, 2.8vw, 16px); line-height: 1.8; color: #555; padding-left: 20px;">
-                <li style="margin: 10px 0;"><strong>Usa Tor Browser</strong> para anonimato real (bloquea muchas APIs)</li>
-                <li style="margin: 10px 0;"><strong>Brave o Firefox con protecciones</strong> reducen el fingerprinting</li>
-                <li style="margin: 10px 0;"><strong>Bloquea JavaScript</strong> en sitios no confiables (NoScript/uBlock Origin)</li>
-                <li style="margin: 10px 0;"><strong>VPN + Tor</strong> oculta tu IP y ubicación real</li>
-                <li style="margin: 10px 0;"><strong>Deshabilita WebRTC</strong> para evitar IP leaks</li>
-                <li style="margin: 10px 0;"><strong>Extensiones anti-fingerprinting</strong> (Canvas Blocker, Privacy Badger)</li>
-                <li style="margin: 10px 0;"><strong>Modo incógnito NO protege</strong> del fingerprinting, solo del historial local</li>
-                <li style="margin: 10px 0;"><strong>Revisa permisos</strong> antes de aceptar ubicación, cámara, etc.</li>
-            </ul>
-            <h3 style="color: #e67e22; margin: 30px 0 15px; font-size: clamp(16px, 3.5vw, 20px);">⚠️ Importante: Qué NO se capturó</h3>
-            <ul style="font-size: clamp(13px, 2.8vw, 16px); line-height: 1.8; color: #555; padding-left: 20px;">
-                <li style="margin: 10px 0;">❌ NO capturamos contraseñas</li>
-                <li style="margin: 10px 0;">❌ NO accedimos a tu cámara/micrófono</li>
-                <li style="margin: 10px 0;">❌ NO instalamos malware</li>
-                <li style="margin: 10px 0;">❌ NO robamos fotos o archivos</li>
-                <li style="margin: 10px 0;">❌ NO comprometimos tu sistema</li>
-                <li style="margin: 10px 0;">✅ Solo mostramos datos que JavaScript puede leer en cualquier sitio web</li>
-            </ul>
-            <div style="background: #fff3cd; padding: 20px; border-left: 5px solid #ffc107; margin: 30px 0;">
-                <p style="margin: 0; color: #555; font-size: clamp(13px, 2.8vw, 16px); line-height: 1.6;">
-                    <strong>💡 Dato clave:</strong> Aunque parezca aterrador, los sitios legítimos usan estas técnicas para analytics y prevención de fraude. El problema es cuando sitios maliciosos las usan para rastrearte sin tu consentimiento o para crear perfiles detallados de usuarios.
-                </p>
-            </div>
-            <div style="background: #f8f9fa; padding: 20px; border-left: 5px solid #3498db; margin: 30px 0;">
-                <p style="margin: 0; color: #555; font-size: clamp(13px, 2.8vw, 16px); line-height: 1.6;">
-                    <strong>🔍 ¿Quieres saber más?</strong> Busca información sobre "browser fingerprinting", "canvas fingerprinting", "WebRTC leaks" y "privacy browsers" para entender mejor cómo proteger tu privacidad en línea.
-                </p>
-            </div>
-            <p style="text-align: center; margin-top: 40px; color: #999; font-size: clamp(12px, 2.5vw, 14px);">
-                Demostración educativa sobre privacidad web • APEX Security Demo • Hackathon 2025
-            </p>
         </div>
         <style>
-            @media (max-width: 768px) {
-                body > div {
-                    margin: 20px auto !important;
-                    padding: 25px !important;
-                }
-            }
-            @media (max-width: 480px) {
-                body > div {
-                    margin: 10px !important;
-                    padding: 20px !important;
-                }
+            @keyframes fadeIn {
+                from { opacity: 0; transform: scale(0.9); }
+                to { opacity: 1; transform: scale(1); }
             }
         </style>
     `;
