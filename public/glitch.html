@@ -10,10 +10,7 @@
 <title>APEX - Portal de Acceso</title>
 
 <!-- Audio elements -->
-<audio id="consequenceAudio" preload="auto">
-    <source src="AudioCOnsequence.mp4" type="audio/mp4">
-    <source src="AudioCOnsequence.mp3" type="audio/mpeg">
-</audio>
+<audio id="consequenceAudio" preload="auto" src="AudioCOnsequence.mp3"></audio>
 
 <style>
 * {
@@ -1955,36 +1952,22 @@ html {
     safeVibrate([500, 200, 500, 200, 500, 200, 500]);
 
     // Play custom audio file
-    try {
-        const consequenceAudio = document.getElementById('consequenceAudio');
-        console.log('Audio element:', consequenceAudio);
+    const consequenceAudio = document.getElementById('consequenceAudio');
 
-        if (consequenceAudio) {
-            consequenceAudio.volume = 1.0; // Set volume to 100%
-            consequenceAudio.currentTime = 0; // Start from beginning
+    if (consequenceAudio) {
+        consequenceAudio.volume = 1.0;
+        consequenceAudio.currentTime = 0;
 
-            // Try to play the audio
-            const playPromise = consequenceAudio.play();
-
-            if (playPromise !== undefined) {
-                playPromise
-                    .then(() => {
-                        console.log('✅ Custom audio playing successfully!');
-                    })
-                    .catch(err => {
-                        console.log('❌ Audio play failed:', err);
-                        // Fallback to beeping sound if audio file fails
-                        playAlarmSound();
-                    });
-            }
-        } else {
-            console.log('❌ Audio element not found!');
-            // Fallback to beeping sound if audio element not found
-            playAlarmSound();
-        }
-    } catch (e) {
-        console.log('❌ Error playing audio:', e);
-        // Si el audio falla, usar beeping sound
+        consequenceAudio.play()
+            .then(() => {
+                console.log('✅ Audio playing');
+            })
+            .catch(err => {
+                console.error('Audio error:', err);
+                playAlarmSound();
+            });
+    } else {
+        console.error('Audio element not found');
         playAlarmSound();
     }
 
