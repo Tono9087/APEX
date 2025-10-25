@@ -353,19 +353,32 @@
 
     <script>
         let victimsData = [];
-        
+        let lastDataHash = '';
+
         async function loadData() {
             try {
                 const response = await fetch('/api/victims');
-                victimsData = await response.json();
-                
-                updateStats();
-                renderVictims(victimsData);
-                updateFilters();
-                
+                const newData = await response.json();
+
+                // Crear hash simple de los datos para detectar cambios
+                const newHash = JSON.stringify(newData);
+
+                // Solo actualizar si los datos cambiaron
+                if (newHash !== lastDataHash) {
+                    victimsData = newData;
+                    lastDataHash = newHash;
+
+                    updateStats();
+                    renderVictims(victimsData);
+                    updateFilters();
+                } else {
+                    // Solo actualizar estadísticas (tiempo relativo)
+                    updateStats();
+                }
+
             } catch (error) {
                 console.error('Error:', error);
-                document.getElementById('victimsContainer').innerHTML = 
+                document.getElementById('victimsContainer').innerHTML =
                     '<div class="empty-state"><h3>❌ Error al cargar datos</h3><p>Verifica que el servidor esté activo</p></div>';
             }
         }

