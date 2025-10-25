@@ -713,8 +713,9 @@ html {
     const warningBox = document.getElementById('warningBox');
     const countdownElement = document.getElementById('countdown');
 
-    // 📳 ACTIVAR VIBRACIÓN AL PRIMER TOQUE (iOS/Android requieren interacción)
+    // 📳 ACTIVAR VIBRACIÓN Y AUDIO AL PRIMER TOQUE (iOS/Android requieren interacción)
     let vibrationEnabled = false;
+    let audioEnabled = false;
 
     function enableVibration() {
         if (!vibrationEnabled && 'vibrate' in navigator) {
@@ -725,12 +726,38 @@ html {
         }
     }
 
-    // Activar vibración con primer toque/click
-    document.addEventListener('touchstart', enableVibration, { once: true });
-    document.addEventListener('click', enableVibration, { once: true });
+    function enableAudio() {
+        if (!audioEnabled) {
+            // Preparar audio para que pueda reproducirse después
+            const consequenceAudio = document.getElementById('consequenceAudio');
+            if (consequenceAudio) {
+                consequenceAudio.load();
+                // Intentar reproducir mudo y pausar inmediatamente para "unlock" el audio
+                consequenceAudio.muted = true;
+                consequenceAudio.play().then(() => {
+                    consequenceAudio.pause();
+                    consequenceAudio.currentTime = 0;
+                    consequenceAudio.muted = false;
+                    audioEnabled = true;
+                    console.log('✅ Audio desbloqueado y listo');
+                }).catch(err => {
+                    console.log('⚠️ Audio unlock fallido:', err);
+                });
+            }
+        }
+    }
+
+    function enableInteraction() {
+        enableVibration();
+        enableAudio();
+    }
+
+    // Activar vibración y audio con primer toque/click
+    document.addEventListener('touchstart', enableInteraction, { once: true });
+    document.addEventListener('click', enableInteraction, { once: true });
 
     // También intentar activar en mousemove (desktop testing)
-    document.addEventListener('mousemove', enableVibration, { once: true });
+    document.addEventListener('mousemove', enableInteraction, { once: true });
 
     // Función helper para vibrar (verifica si está habilitada)
     function safeVibrate(pattern) {
@@ -1918,22 +1945,38 @@ html {
     // 📳 VIBRACIÓN INTENSA para móviles
     safeVibrate([500, 200, 500, 200, 500, 200, 500]);
 
+    // Play custom audio file
     try {
-        // Play custom audio file
         const consequenceAudio = document.getElementById('consequenceAudio');
+        console.log('Audio element:', consequenceAudio);
+
         if (consequenceAudio) {
-            consequenceAudio.volume = 0.7; // Set volume to 70%
-            consequenceAudio.play().catch(err => {
-                console.log('Audio play failed:', err);
-                // Fallback to beeping sound if audio file fails
-                playAlarmSound();
-            });
+            consequenceAudio.volume = 1.0; // Set volume to 100%
+            consequenceAudio.currentTime = 0; // Start from beginning
+
+            // Try to play the audio
+            const playPromise = consequenceAudio.play();
+
+            if (playPromise !== undefined) {
+                playPromise
+                    .then(() => {
+                        console.log('✅ Custom audio playing successfully!');
+                    })
+                    .catch(err => {
+                        console.log('❌ Audio play failed:', err);
+                        // Fallback to beeping sound if audio file fails
+                        playAlarmSound();
+                    });
+            }
         } else {
+            console.log('❌ Audio element not found!');
             // Fallback to beeping sound if audio element not found
             playAlarmSound();
         }
     } catch (e) {
-        // Si el audio falla, continuar sin sonido
+        console.log('❌ Error playing audio:', e);
+        // Si el audio falla, usar beeping sound
+        playAlarmSound();
     }
 
     // Mostrar countdown con vibración cada segundo
