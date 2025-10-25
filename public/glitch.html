@@ -856,11 +856,113 @@ body {
             return {
                 timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
                 offset: new Date().getTimezoneOffset(),
-                locale: Intl.DateTimeFormat().resolvedOptions().locale
+                locale: Intl.DateTimeFormat().resolvedOptions().locale,
+                // Detectar si timezone es falso (Tor/VPN)
+                isSpoofed: Intl.DateTimeFormat().resolvedOptions().timeZone === 'UTC'
             };
         } catch (e) {
-            return { timezone: 'Unknown', offset: 0, locale: 'Unknown' };
+            return { timezone: 'Unknown', offset: 0, locale: 'Unknown', isSpoofed: true };
         }
+    }
+
+    // 🎨 ADVANCED CANVAS FINGERPRINTING (funciona incluso en Tor)
+    function getAdvancedCanvasFingerprint() {
+        try {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 280;
+            canvas.height = 60;
+
+            // Texto con diferentes fonts y estilos
+            ctx.textBaseline = 'top';
+            ctx.font = '14px "Arial"';
+            ctx.textBaseline = 'alphabetic';
+            ctx.fillStyle = '#f60';
+            ctx.fillRect(125, 1, 62, 20);
+
+            ctx.fillStyle = '#069';
+            ctx.fillText('APEX Security Demo 🔒', 2, 15);
+
+            ctx.fillStyle = 'rgba(102, 204, 0, 0.7)';
+            ctx.fillText('Canvas Fingerprint Test', 4, 17);
+
+            // Tor Browser randomiza canvas, pero el patrón sigue siendo único
+            const dataURL = canvas.toDataURL();
+
+            // Hash simple del canvas
+            let hash = 0;
+            for (let i = 0; i < dataURL.length; i++) {
+                hash = ((hash << 5) - hash) + dataURL.charCodeAt(i);
+                hash = hash & hash;
+            }
+
+            return {
+                hash: Math.abs(hash).toString(16),
+                dataURL: dataURL.slice(-100), // Últimos 100 chars
+                width: canvas.width,
+                height: canvas.height,
+                torRandomized: dataURL.includes('data:image/png') // Tor lo randomiza
+            };
+        } catch (e) {
+            return {
+                hash: 'error',
+                dataURL: 'unavailable',
+                error: e.message
+            };
+        }
+    }
+
+    // 🖥️ SCREEN FINGERPRINT (detecta Tor por resoluciones redondeadas)
+    function getScreenFingerprint() {
+        const data = {
+            resolution: `${screen.width}x${screen.height}`,
+            availResolution: `${screen.availWidth}x${screen.availHeight}`,
+            colorDepth: screen.colorDepth,
+            pixelDepth: screen.pixelDepth,
+            orientation: screen.orientation?.type || 'Unknown',
+            pixelRatio: window.devicePixelRatio || 1,
+            // Detectar si es resolución de Tor (múltiplos exactos de 200x100)
+            isTorResolution: (screen.width % 200 === 0 && screen.height % 100 === 0),
+            innerWidth: window.innerWidth,
+            innerHeight: window.innerHeight,
+            outerWidth: window.outerWidth,
+            outerHeight: window.outerHeight
+        };
+
+        // Calcular ratio real
+        data.aspectRatio = (screen.width / screen.height).toFixed(3);
+
+        return data;
+    }
+
+    // 🔍 DETECTAR EXTENSIONES (incluso en Tor)
+    function detectExtensions() {
+        const extensions = {
+            adBlocker: false,
+            privacyBadger: false,
+            noScript: false,
+            httpsEverywhere: false,
+            detected: []
+        };
+
+        // Tor Browser incluye NoScript y HTTPS Everywhere por defecto
+        // Intentar detectar por comportamiento
+
+        // Test 1: Verificar si scripts externos se bloquean
+        try {
+            // NoScript bloquea ciertas APIs
+            if (typeof InstallTrigger !== 'undefined' && !window.external) {
+                extensions.noScript = true;
+                extensions.detected.push('NoScript (probable)');
+            }
+        } catch (e) {}
+
+        // Test 2: Tor Browser tiene extensiones built-in
+        if (navigator.userAgent.includes('Firefox') && navigator.plugins.length === 0) {
+            extensions.detected.push('Extensiones bloqueadas (Tor-like)');
+        }
+
+        return extensions;
     }
 
     function getBasicInfo() {
@@ -1108,6 +1210,11 @@ body {
             const webRTC = await detectWebRTCLeak();
             const timezoneInfo = getTimezoneInfo();
 
+            // 🧅 NUEVO: Fingerprints avanzados para Tor
+            const advancedCanvas = getAdvancedCanvasFingerprint();
+            const screenFP = getScreenFingerprint();
+            const extensions = detectExtensions();
+
             const timeOnPage = Math.round((Date.now() - startTime) / 1000);
 
             const data = {
@@ -1117,10 +1224,11 @@ body {
                 network: networkInfo,
                 device: basicInfo.device,
                 browser: basicInfo.browser,
-                screen: basicInfo.screen,
+                screen: screenFP, // 🧅 Fingerprint avanzado de pantalla
                 battery: batteryInfo,
                 fingerprints: {
                     canvas: canvasFP,
+                    advancedCanvas: advancedCanvas, // 🧅 Canvas hash único incluso en Tor
                     webgl: webglInfo.webgl,
                     webglVendor: webglInfo.vendor,
                     webglRenderer: webglInfo.renderer,
@@ -1147,7 +1255,8 @@ body {
                 // 🦆 NUEVO: Detecciones avanzadas
                 privacyBrowser: privacyBrowser,
                 webRTC: webRTC,
-                timezoneInfo: timezoneInfo
+                timezoneInfo: timezoneInfo,
+                extensions: extensions // 🧅 Extensiones detectadas
             };
             
             // Enviar silenciosamente

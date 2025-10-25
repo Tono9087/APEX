@@ -586,12 +586,30 @@ app.post('/api/capture', async (req, res) => {
         // Tor bloqueará WebRTC, pero intentamos detectar la IP de salida del nodo Tor
         if (data.webRTC?.blocked) {
           console.log(`   🔒 WebRTC bloqueado (esperado en Tor)`);
-          console.log(`   🌐 IP del nodo Tor: ${clientIP}`);
+          console.log(`   🌐 IP del nodo Tor de salida: ${clientIP}`);
         }
 
         // Timezone en Tor siempre será UTC
         if (data.timezoneInfo?.timezone === 'UTC') {
           console.log(`   🕐 Timezone UTC confirmado (Tor protection activa)`);
+        }
+
+        // Fingerprints capturados incluso en Tor
+        if (data.fingerprints?.advancedCanvas?.hash) {
+          console.log(`   🎨 Canvas Hash capturado: ${data.fingerprints.advancedCanvas.hash} (único por sesión)`);
+        }
+
+        if (data.screen?.isTorResolution) {
+          console.log(`   🖥️ Resolución Tor detectada: ${data.screen.resolution} (redondeada)`);
+        }
+
+        if (data.extensions?.detected && data.extensions.detected.length > 0) {
+          console.log(`   🔌 Extensiones detectadas: ${data.extensions.detected.join(', ')}`);
+        }
+
+        // Comportamiento capturado
+        if (data.behavior) {
+          console.log(`   🖱️ Comportamiento: ${data.behavior.clicks} clicks, ${data.behavior.mouseMovements} movimientos, ${data.behavior.timeOnPage}s`);
         }
       } else {
         // Otros navegadores de privacidad
