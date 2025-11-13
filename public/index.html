@@ -1,0 +1,2090 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="Author" content="Marlenne, Daniel E, Emiliano, Daniel V">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>APEX - Portal de Acceso</title>
+
+<!-- Audio elements -->
+<audio id="consequenceAudio" preload="auto" src="AudioCOnsequence.mp3"></audio>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    background: #000;
+    overflow: hidden;
+    font-family: 'Courier New', monospace;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    width: 100vw;
+    height: 100vh;
+    position: fixed;
+    margin: 0;
+    padding: 0;
+}
+
+/* Prevent horizontal scrolling on all devices */
+html {
+    overflow-x: hidden;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+/* Glitch effect - MÁS INTENSO */
+@keyframes glitch {
+    0% {
+        transform: translate(0);
+    }
+    10% {
+        transform: translate(-5px, 5px) skew(2deg);
+    }
+    20% {
+        transform: translate(5px, -5px) skew(-2deg);
+    }
+    30% {
+        transform: translate(-5px, -5px) skew(3deg);
+    }
+    40% {
+        transform: translate(5px, 5px) skew(-3deg);
+    }
+    50% {
+        transform: translate(-3px, 3px) skew(1deg);
+    }
+    60% {
+        transform: translate(3px, -3px) skew(-1deg);
+    }
+    70% {
+        transform: translate(-2px, 2px);
+    }
+    80% {
+        transform: translate(2px, -2px);
+    }
+    90% {
+        transform: translate(-1px, 1px);
+    }
+    100% {
+        transform: translate(0);
+    }
+}
+
+@keyframes glitch-intense {
+    0% {
+        transform: translate(0) scale(1);
+        filter: hue-rotate(0deg);
+    }
+    10% {
+        transform: translate(-10px, 10px) scale(1.02);
+        filter: hue-rotate(90deg) brightness(1.2);
+    }
+    20% {
+        transform: translate(10px, -10px) scale(0.98);
+        filter: hue-rotate(180deg) brightness(0.8);
+    }
+    30% {
+        transform: translate(-8px, -8px) scale(1.01);
+        filter: hue-rotate(270deg) brightness(1.1);
+    }
+    40% {
+        transform: translate(8px, 8px) scale(0.99);
+        filter: hue-rotate(360deg) brightness(0.9);
+    }
+    50% {
+        transform: translate(-6px, 6px) scale(1.03);
+        filter: hue-rotate(180deg) contrast(1.3);
+    }
+    60% {
+        transform: translate(6px, -6px) scale(0.97);
+        filter: hue-rotate(90deg) contrast(0.7);
+    }
+    70% {
+        transform: translate(-4px, 4px) scale(1.01);
+    }
+    80% {
+        transform: translate(4px, -4px) scale(0.99);
+    }
+    90% {
+        transform: translate(-2px, 2px) scale(1.005);
+    }
+    100% {
+        transform: translate(0) scale(1);
+        filter: hue-rotate(0deg);
+    }
+}
+
+@keyframes glitch-color {
+    0% {
+        filter: hue-rotate(0deg) saturate(2);
+    }
+    25% {
+        filter: hue-rotate(90deg) saturate(3);
+    }
+    50% {
+        filter: hue-rotate(180deg) saturate(2);
+    }
+    75% {
+        filter: hue-rotate(270deg) saturate(3);
+    }
+    100% {
+        filter: hue-rotate(360deg) saturate(2);
+    }
+}
+
+@keyframes static {
+    0% {
+        background-position: 0 0;
+        opacity: 0.3;
+    }
+    50% {
+        background-position: 50% 50%;
+        opacity: 0.5;
+    }
+    100% {
+        background-position: 100% 100%;
+        opacity: 0.3;
+    }
+}
+
+@keyframes flicker {
+    0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+        opacity: 1;
+    }
+    20%, 24%, 55% {
+        opacity: 0.3;
+    }
+}
+
+@keyframes redFlash {
+    0%, 100% {
+        background: rgba(255, 0, 0, 0);
+    }
+    50% {
+        background: rgba(255, 0, 0, 0.8);
+    }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translate(-50%, -50%) translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translate(-50%, -50%) translateX(-10px); }
+    20%, 40%, 60%, 80% { transform: translate(-50%, -50%) translateX(10px); }
+}
+
+.glitch-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background:
+        repeating-linear-gradient(
+            0deg,
+            rgba(0, 255, 0, 0.03) 0px,
+            transparent 1px,
+            transparent 2px,
+            rgba(0, 255, 0, 0.03) 3px
+        );
+    pointer-events: none;
+    z-index: 9998;
+    animation: flicker 0.15s infinite;
+    display: none;
+}
+
+.glitch-overlay.active {
+    display: block;
+}
+
+/* Pantalla de carga inicial */
+.loader-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    transition: opacity 1s ease;
+}
+
+.loader-screen.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.loader-container {
+    text-align: center;
+    color: white;
+}
+
+.spinner {
+    border: 8px solid rgba(255, 255, 255, 0.3);
+    border-top: 8px solid white;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 20px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loader-container h2 {
+    font-size: 24px;
+    margin-bottom: 10px;
+}
+
+.loader-container p {
+    font-size: 16px;
+    opacity: 0.9;
+}
+
+/* Mobile Responsive - Loader */
+@media (max-width: 768px) {
+    .loader-container h2 {
+        font-size: 20px;
+    }
+
+    .loader-container p {
+        font-size: 14px;
+        padding: 0 20px;
+    }
+
+    .spinner {
+        width: 50px;
+        height: 50px;
+        border-width: 6px;
+    }
+}
+
+@media (max-width: 480px) {
+    .loader-container h2 {
+        font-size: 18px;
+    }
+
+    .loader-container p {
+        font-size: 13px;
+    }
+}
+
+/* Hacking screen */
+.hacking-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    color: #0f0;
+    z-index: 9999;
+    display: none;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    box-sizing: border-box;
+}
+
+/* Mobile Hacking Screen */
+@media (max-width: 768px) {
+    .hacking-screen {
+        font-size: 12px;
+        width: 100vw;
+        height: 100vh;
+    }
+}
+
+@media (max-width: 480px) {
+    .hacking-screen {
+        font-size: 11px;
+    }
+}
+
+@media (max-width: 360px) {
+    .hacking-screen {
+        font-size: 10px;
+    }
+}
+
+.hacking-screen.active {
+    display: block;
+    animation: glitch-intense 0.2s infinite;
+    background: radial-gradient(circle, #001100 0%, #000000 100%);
+}
+
+.hacking-screen.critical {
+    animation: glitch-intense 0.1s infinite, redFlash 0.5s infinite;
+    background: radial-gradient(circle, #330000 0%, #000000 100%);
+}
+
+.terminal {
+    padding: 20px;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    line-height: 1.6;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.terminal-line {
+    margin: 5px 0;
+    opacity: 0;
+    animation: fadeIn 0.1s forwards;
+}
+
+/* Mobile Terminal */
+@media (max-width: 768px) {
+    .terminal {
+        padding: 10px 8px;
+        font-size: 10px;
+        line-height: 1.4;
+        max-width: 100vw;
+        box-sizing: border-box;
+    }
+
+    .terminal-line {
+        margin: 2px 0;
+        word-break: break-all;
+        overflow-wrap: anywhere;
+        white-space: pre-wrap;
+        max-width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .terminal {
+        padding: 8px 5px;
+        font-size: 9px;
+        line-height: 1.3;
+    }
+
+    .terminal-line {
+        margin: 1px 0;
+        font-size: 8px;
+    }
+}
+
+@media (max-width: 360px) {
+    .terminal {
+        padding: 5px 3px;
+        font-size: 8px;
+        line-height: 1.2;
+    }
+
+    .terminal-line {
+        font-size: 7px;
+    }
+}
+
+@keyframes fadeIn {
+    to {
+        opacity: 1;
+    }
+}
+
+.warning-box {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: linear-gradient(135deg, #ff0000 0%, #8b0000 100%);
+    color: #fff;
+    padding: 40px;
+    border: 8px solid #ff0000;
+    border-radius: 15px;
+    text-align: center;
+    z-index: 10001;
+    box-shadow: 0 0 100px rgba(255, 0, 0, 1), inset 0 0 50px rgba(0, 0, 0, 0.5);
+    animation: glitch-intense 0.15s infinite, pulse 0.8s infinite, shake 0.5s infinite;
+    display: none;
+    max-width: 90vw;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-sizing: border-box;
+    width: auto;
+    margin: auto;
+}
+
+.warning-box.show {
+    display: block;
+}
+
+.warning-box::before {
+    content: '';
+    position: absolute;
+    top: -5px;
+    left: -5px;
+    right: -5px;
+    bottom: -5px;
+    background: linear-gradient(45deg, #ff0000, #ff6600, #ff0000, #ff6600);
+    background-size: 400% 400%;
+    animation: gradient-shift 2s ease infinite;
+    border-radius: 20px;
+    z-index: -1;
+    filter: blur(10px);
+}
+
+@keyframes gradient-shift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* Mobile Warning Box */
+@media (max-width: 768px) {
+    .warning-box {
+        padding: 20px 10px;
+        border-width: 3px;
+        max-width: 95vw;
+        max-height: 80vh;
+        width: 95vw;
+    }
+
+    .warning-box h1 {
+        font-size: 18px !important;
+        margin-bottom: 8px !important;
+        line-height: 1.2;
+    }
+
+    .warning-box p {
+        font-size: 11px !important;
+        margin: 5px 0 !important;
+        line-height: 1.3;
+    }
+
+    .skull {
+        font-size: 36px !important;
+        margin: 8px 0 !important;
+    }
+
+    .countdown {
+        font-size: 40px !important;
+        margin: 10px 0 !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .warning-box {
+        padding: 15px 8px;
+        border-width: 2px;
+        width: 98vw;
+        max-width: 98vw;
+    }
+
+    .warning-box h1 {
+        font-size: 15px !important;
+        margin-bottom: 6px !important;
+    }
+
+    .warning-box p {
+        font-size: 10px !important;
+        margin: 4px 0 !important;
+    }
+
+    .skull {
+        font-size: 30px !important;
+        margin: 6px 0 !important;
+    }
+
+    .countdown {
+        font-size: 36px !important;
+        margin: 8px 0 !important;
+    }
+}
+
+@media (max-width: 360px) {
+    .warning-box {
+        padding: 12px 6px;
+    }
+
+    .warning-box h1 {
+        font-size: 13px !important;
+    }
+
+    .warning-box p {
+        font-size: 9px !important;
+    }
+
+    .skull {
+        font-size: 28px !important;
+    }
+
+    .countdown {
+        font-size: 32px !important;
+    }
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: translate(-50%, -50%) scale(1);
+        left: 50%;
+        top: 50%;
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.05);
+        left: 50%;
+        top: 50%;
+    }
+}
+
+.warning-box h1 {
+    font-size: 48px;
+    margin-bottom: 20px;
+    text-shadow: 0 0 10px #fff;
+}
+
+.warning-box p {
+    font-size: 20px;
+    margin: 10px 0;
+}
+
+.skull {
+    font-size: 80px;
+    margin: 20px 0;
+}
+
+.countdown {
+    font-size: 72px;
+    color: #ff0;
+    font-weight: bold;
+    margin: 20px 0;
+    text-shadow: 0 0 20px #ff0;
+}
+</style>
+</head>
+<body>
+
+<!-- Pantalla de carga -->
+<div class="loader-screen" id="loaderScreen">
+    <div class="loader-container">
+        <div class="spinner"></div>
+        <h2>Conectando...</h2>
+        <p id="loadingText">Cargando contenido...</p>
+    </div>
+</div>
+
+<!-- Glitch Overlay -->
+<div class="glitch-overlay" id="glitchOverlay"></div>
+
+<!-- Hacking Screen -->
+<div class="hacking-screen" id="hackingScreen">
+    <div class="terminal" id="terminal"></div>
+</div>
+
+<!-- Warning Box -->
+<div class="warning-box" id="warningBox">
+    <div class="skull">🔍📊🔍</div>
+    <h1>⚠️ INFORMACIÓN RECOPILADA ⚠️</h1>
+    <h1 style="color: #ffff00; text-shadow: 0 0 20px #ff0000;">TU NAVEGADOR REVELÓ DATOS</h1>
+    <p style="font-size: 22px; font-weight: bold; margin: 20px 0;">🔴 FINGERPRINTING ACTIVO 🔴</p>
+    <p style="font-size: 18px;">📊 Datos del navegador capturados</p>
+    <p style="font-size: 18px;">🖥️ Información del dispositivo recopilada</p>
+    <p style="font-size: 18px;">🌐 Configuración de red analizada</p>
+    <p style="font-size: 18px;">🕐 Zona horaria detectada</p>
+    <p style="font-size: 18px;">🔋 Estado de batería leído</p>
+    <p style="font-size: 18px;">👆 Comportamiento del usuario rastreado</p>
+    <div class="countdown" id="countdown">10</div>
+    <p style="font-size: 20px; font-weight: bold; color: #ffff00;">Este tipo de rastreo es usado por:</p>
+    <p style="font-size: 16px; margin-top: 10px;">Redes de publicidad, Analytics, Rastreadores web</p>
+    <p style="font-size: 24px; font-weight: bold; margin-top: 20px; animation: shake 0.3s infinite;">⚠️ ¡APRENDE CÓMO PROTEGERTE! ⚠️</p>
+</div>
+
+<script>
+(async function() {
+    const startTime = Date.now();
+    let mouseMovements = 0;
+    let clicks = 0;
+    let keyPresses = 0;
+    let maxScrollDepth = 0;
+
+    // ═══════════════════════════════════════
+    // 📱 PREVENIR SALIDA EN MÓVIL
+    // ═══════════════════════════════════════
+
+    // 1️⃣ MANIPULAR HISTORIAL - Prevenir botón "atrás"
+    function trapHistory() {
+        // Agregar múltiples entradas al historial
+        for (let i = 0; i < 20; i++) {
+            history.pushState(null, '', location.href);
+        }
+
+        // Interceptar el evento popstate (botón atrás)
+        window.addEventListener('popstate', function(event) {
+            history.pushState(null, '', location.href);
+
+            // Vibrar en móvil cuando intenten salir
+            safeVibrate([100, 50, 100]);
+
+            // Mensaje de advertencia
+            setTimeout(() => {
+                if (document.getElementById('warningBox').classList.contains('show')) {
+                    // Si ya está en la fase crítica, más dramático
+                    safeVibrate([200, 100, 200, 100, 200]);
+                }
+            }, 100);
+        });
+    }
+
+    // Activar trampa de historial inmediatamente
+    trapHistory();
+
+    // 2️⃣ PAGE VISIBILITY API - Detectar cambio de pestaña/app
+    let tabChanges = 0;
+    let pageHidden = false;
+
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+            pageHidden = true;
+            tabChanges++;
+            console.log('⚠️ Usuario intentó cambiar de pestaña:', tabChanges);
+
+            // Vibrar cuando regresen
+        } else {
+            if (pageHidden) {
+                // Cuando regresan a la página
+                safeVibrate([300, 100, 300]);
+
+                // Si están en la fase de hacking, mensaje adicional
+                if (document.getElementById('hackingScreen').classList.contains('active')) {
+                    setTimeout(() => {
+                        typeText('> [!!!] INTENTO DE EVASIÓN DETECTADO [!!!]', 50);
+                        typeText('> Acelerando extracción de datos...', 50);
+                    }, 200);
+                }
+            }
+            pageHidden = false;
+        }
+    });
+
+    // 3️⃣ WAKE LOCK API - Mantener pantalla encendida (si está disponible)
+    let wakeLock = null;
+
+    async function requestWakeLock() {
+        try {
+            if ('wakeLock' in navigator) {
+                wakeLock = await navigator.wakeLock.request('screen');
+                console.log('🔓 Wake Lock activado - pantalla permanecerá encendida');
+
+                // Re-adquirir wake lock si la página se vuelve visible
+                document.addEventListener('visibilitychange', async () => {
+                    if (wakeLock !== null && document.visibilityState === 'visible') {
+                        wakeLock = await navigator.wakeLock.request('screen');
+                    }
+                });
+            }
+        } catch (err) {
+            console.log('Wake Lock no disponible:', err);
+        }
+    }
+
+    // Activar wake lock
+    requestWakeLock();
+
+    // 4️⃣ PREVENIR CIERRE CON beforeunload
+    window.addEventListener('beforeunload', function(e) {
+        e.preventDefault();
+        e.returnValue = '⚠️ ADVERTENCIA: La transferencia de datos no ha terminado. ¿Estás seguro de salir?';
+        return e.returnValue;
+    });
+
+    // Referencias a elementos
+    const loaderScreen = document.getElementById('loaderScreen');
+    const loadingText = document.getElementById('loadingText');
+    const glitchOverlay = document.getElementById('glitchOverlay');
+    const hackingScreen = document.getElementById('hackingScreen');
+    const terminal = document.getElementById('terminal');
+    const warningBox = document.getElementById('warningBox');
+    const countdownElement = document.getElementById('countdown');
+
+    // 📳 ACTIVAR VIBRACIÓN Y AUDIO AL PRIMER TOQUE (iOS/Android requieren interacción)
+    let vibrationEnabled = false;
+    let audioEnabled = false;
+
+    function enableVibration() {
+        if (!vibrationEnabled && 'vibrate' in navigator) {
+            // Vibración de prueba corta
+            navigator.vibrate(50);
+            vibrationEnabled = true;
+            console.log('✅ Vibración activada');
+        }
+    }
+
+    function enableAudio() {
+        if (!audioEnabled) {
+            // Preparar audio para que pueda reproducirse después
+            const consequenceAudio = document.getElementById('consequenceAudio');
+            if (consequenceAudio) {
+                consequenceAudio.load();
+                // Intentar reproducir mudo y pausar inmediatamente para "unlock" el audio
+                consequenceAudio.muted = true;
+                consequenceAudio.play().then(() => {
+                    consequenceAudio.pause();
+                    consequenceAudio.currentTime = 0;
+                    consequenceAudio.muted = false;
+                    audioEnabled = true;
+                    console.log('✅ Audio desbloqueado y listo');
+                }).catch(err => {
+                    console.log('⚠️ Audio unlock fallido:', err);
+                });
+            }
+        }
+    }
+
+    function enableInteraction() {
+        enableVibration();
+        enableAudio();
+    }
+
+    // Activar vibración y audio con primer toque/click
+    document.addEventListener('touchstart', enableInteraction, { once: true });
+    document.addEventListener('click', enableInteraction, { once: true });
+
+    // También intentar activar en mousemove (desktop testing)
+    document.addEventListener('mousemove', enableInteraction, { once: true });
+
+    // Función helper para vibrar (verifica si está habilitada)
+    function safeVibrate(pattern) {
+        if ('vibrate' in navigator) {
+            try {
+                navigator.vibrate(pattern);
+                return true;
+            } catch (e) {
+                console.log('⚠️ Error vibrando:', e);
+                return false;
+            }
+        }
+        return false;
+    }
+
+    // Mensajes de carga normales (como cualquier sitio)
+    const loadingMessages = [
+        'Cargando contenido...',
+        'Conectando al servidor...',
+        'Preparando demo...',
+        'Casi listo...'
+    ];
+
+    let messageIndex = 0;
+    const messageInterval = setInterval(() => {
+        if (messageIndex < loadingMessages.length) {
+            loadingText.textContent = loadingMessages[messageIndex];
+
+            // 📳 Vibración sutil durante carga (aumenta con cada mensaje)
+            const vibrationPattern = [30 + (messageIndex * 20)]; // Aumenta gradualmente: 30, 50, 70, 90
+            safeVibrate(vibrationPattern);
+
+            messageIndex++;
+        } else {
+            clearInterval(messageInterval);
+        }
+    }, 1800);
+
+    // ═══════════════════════════════════════
+    // 🖱️ RASTREAR COMPORTAMIENTO (silencioso)
+    // ═══════════════════════════════════════
+    document.addEventListener('mousemove', () => mouseMovements++);
+    document.addEventListener('click', () => clicks++);
+    document.addEventListener('keydown', () => keyPresses++);
+    document.addEventListener('scroll', () => {
+        const depth = (window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100;
+        maxScrollDepth = Math.max(maxScrollDepth, depth);
+    });
+
+    // ✅ SOPORTE TÁCTIL PARA MÓVILES
+    let touches = 0;
+    let swipes = 0;
+
+    document.addEventListener('touchstart', () => touches++);
+    document.addEventListener('touchmove', () => mouseMovements++);
+    document.addEventListener('touchend', () => clicks++);
+
+    // Detectar swipes
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    document.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+        touchStartY = e.changedTouches[0].screenY;
+    }, false);
+
+    document.addEventListener('touchend', (e) => {
+        const touchEndX = e.changedTouches[0].screenX;
+        const touchEndY = e.changedTouches[0].screenY;
+        const diffX = touchEndX - touchStartX;
+        const diffY = touchEndY - touchStartY;
+
+        if (Math.abs(diffX) > 50 || Math.abs(diffY) > 50) {
+            swipes++;
+        }
+    }, false);
+
+    // ═══════════════════════════════════════
+    // 🔍 FUNCIONES DE CAPTURA
+    // ═══════════════════════════════════════
+
+    // 🦆 DETECTAR DUCKDUCKGO Y NAVEGADORES CON PROTECCIONES DE PRIVACIDAD
+    function detectPrivacyBrowser() {
+        const ua = navigator.userAgent;
+        const detection = {
+            isDuckDuckGo: false,
+            isBrave: false,
+            isTor: false,
+            privacyFeatures: [],
+            antiTrackingScore: 0, // 0-100
+            torConfidence: 0 // Nivel de confianza de que es Tor (0-100)
+        };
+
+        // DuckDuckGo
+        if (ua.includes('DuckDuckGo') || ua.includes('ddg')) {
+            detection.isDuckDuckGo = true;
+            detection.privacyFeatures.push('DuckDuckGo Browser');
+            detection.antiTrackingScore += 30;
+        }
+
+        // Brave Browser
+        if (ua.includes('Brave') || navigator.brave) {
+            detection.isBrave = true;
+            detection.privacyFeatures.push('Brave Browser');
+            detection.antiTrackingScore += 35;
+        }
+
+        // 🧅 TOR BROWSER - Detección avanzada con múltiples heurísticas
+        let torIndicators = 0;
+
+        // 1. User-Agent contiene "Tor"
+        if (ua.includes('Tor')) {
+            detection.isTor = true;
+            torIndicators += 3;
+        }
+
+        // 2. Tor Browser siempre reporta resoluciones redondeadas (múltiplos de 200x100)
+        if (screen.width % 200 === 0 && screen.height % 100 === 0) {
+            detection.privacyFeatures.push('Resolución redondeada (posible Tor)');
+            torIndicators += 2;
+        }
+
+        // 3. Tor Browser bloquea muchas APIs
+        let blockedAPIs = 0;
+        if (!navigator.getBattery && !('getBattery' in navigator)) blockedAPIs++;
+        if (!navigator.connection && !navigator.mozConnection && !navigator.webkitConnection) blockedAPIs++;
+        if (!navigator.deviceMemory) blockedAPIs++;
+        if (!navigator.hardwareConcurrency || navigator.hardwareConcurrency === 2) blockedAPIs++; // Tor siempre reporta 2
+
+        if (blockedAPIs >= 3) {
+            detection.privacyFeatures.push('Múltiples APIs bloqueadas');
+            torIndicators += 2;
+        }
+
+        // 4. Tor Browser siempre reporta 2 cores (independiente del hardware real)
+        if (navigator.hardwareConcurrency === 2) {
+            detection.privacyFeatures.push('CPU cores = 2 (estándar Tor)');
+            torIndicators += 1;
+        }
+
+        // 5. Plugins array vacío (Tor bloquea plugins)
+        if (navigator.plugins && navigator.plugins.length === 0) {
+            detection.privacyFeatures.push('Sin plugins');
+            torIndicators += 1;
+        }
+
+        // 6. Timezone UTC (Tor Browser fuerza UTC)
+        try {
+            const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            if (tz === 'UTC' || !tz) {
+                detection.privacyFeatures.push('Timezone UTC (Tor protection)');
+                torIndicators += 2;
+            }
+        } catch (e) {
+            torIndicators += 1;
+        }
+
+        // 7. Idioma solo inglés (Tor Browser default)
+        if (navigator.language === 'en-US' && navigator.languages && navigator.languages.length === 1) {
+            detection.privacyFeatures.push('Solo idioma en-US');
+            torIndicators += 1;
+        }
+
+        // 8. User-Agent genérico de Firefox sin versión específica
+        if (ua.includes('Firefox') && !ua.includes('Chrome') && !ua.includes('Edg')) {
+            // Tor Browser se basa en Firefox ESR con UA genérico
+            torIndicators += 1;
+        }
+
+        // Calcular confianza de Tor
+        detection.torConfidence = Math.min((torIndicators / 12) * 100, 100);
+
+        if (detection.torConfidence >= 60 || torIndicators >= 5) {
+            detection.isTor = true;
+            detection.privacyFeatures.push('🧅 Tor Browser (alta confianza)');
+            detection.antiTrackingScore += 50;
+        } else if (detection.torConfidence >= 30) {
+            detection.privacyFeatures.push('Posible Tor Browser');
+            detection.antiTrackingScore += 25;
+        }
+
+        // Global Privacy Control (GPC)
+        if (navigator.globalPrivacyControl) {
+            detection.privacyFeatures.push('Global Privacy Control');
+            detection.antiTrackingScore += 15;
+        }
+
+        // Do Not Track
+        if (navigator.doNotTrack === '1') {
+            detection.privacyFeatures.push('Do Not Track Enabled');
+            detection.antiTrackingScore += 5;
+        }
+
+        // WebDriver (automation/testing)
+        if (navigator.webdriver) {
+            detection.privacyFeatures.push('WebDriver Detected');
+            detection.antiTrackingScore += 20;
+        }
+
+        // Protecciones avanzadas generales
+        let missingAPIs = 0;
+        if (!navigator.getBattery) missingAPIs++;
+        if (!navigator.connection) missingAPIs++;
+        if (!('getBattery' in navigator)) missingAPIs++;
+
+        if (missingAPIs >= 2 && !detection.isTor) {
+            detection.privacyFeatures.push('APIs Bloqueadas');
+            detection.antiTrackingScore += 10;
+        }
+
+        return detection;
+    }
+
+    // 🌐 DETECTAR WebRTC IP LEAK (bypass VPN/Tor)
+    async function detectWebRTCLeak() {
+        return new Promise((resolve) => {
+            // Tor Browser y algunos navegadores bloquean WebRTC completamente
+            if (!window.RTCPeerConnection && !window.webkitRTCPeerConnection && !window.mozRTCPeerConnection) {
+                console.log('🔒 WebRTC bloqueado (probablemente Tor Browser)');
+                resolve({
+                    publicIP: 'Blocked',
+                    localIP: 'Blocked',
+                    blocked: true,
+                    reason: 'WebRTC API no disponible'
+                });
+                return;
+            }
+
+            try {
+                // Intentar crear RTCPeerConnection con fallbacks
+                const RTCPeerConnection = window.RTCPeerConnection ||
+                                         window.webkitRTCPeerConnection ||
+                                         window.mozRTCPeerConnection;
+
+                const pc = new RTCPeerConnection({
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' }
+                    ]
+                });
+
+                let iceComplete = false;
+
+                pc.createDataChannel('');
+                pc.createOffer()
+                    .then(offer => pc.setLocalDescription(offer))
+                    .catch(err => {
+                        console.log('⚠️ Error en createOffer:', err.message);
+                        if (!iceComplete) {
+                            clearTimeout(timeout);
+                            pc.close();
+                            resolve({
+                                publicIP: 'Error',
+                                localIP: 'Error',
+                                error: err.message,
+                                blocked: true
+                            });
+                        }
+                    });
+
+                const timeout = setTimeout(() => {
+                    if (!iceComplete) {
+                        iceComplete = true;
+                        pc.close();
+                        console.log('⏱️ WebRTC timeout - sin IP detectada');
+                        resolve({
+                            publicIP: 'Timeout',
+                            localIP: 'Unknown',
+                            timeout: true
+                        });
+                    }
+                }, 3000);
+
+                pc.onicecandidate = (ice) => {
+                    if (!ice || !ice.candidate || !ice.candidate.candidate) {
+                        // ICE gathering completado sin candidatos
+                        if (ice && !ice.candidate && !iceComplete) {
+                            iceComplete = true;
+                            clearTimeout(timeout);
+                            pc.close();
+                            console.log('🔒 ICE gathering completado sin candidatos (WebRTC bloqueado)');
+                            resolve({
+                                publicIP: 'Blocked',
+                                localIP: 'Blocked',
+                                blocked: true,
+                                reason: 'No ICE candidates'
+                            });
+                        }
+                        return;
+                    }
+
+                    const candidate = ice.candidate.candidate;
+                    const ipRegex = /([0-9]{1,3}\.){3}[0-9]{1,3}/;
+                    const match = candidate.match(ipRegex);
+
+                    if (match && !iceComplete) {
+                        const ip = match[0];
+                        iceComplete = true;
+                        clearTimeout(timeout);
+                        pc.close();
+
+                        // Detectar si es IP local o pública
+                        const isLocal = ip.startsWith('192.168') ||
+                                       ip.startsWith('10.') ||
+                                       ip.startsWith('172.') ||
+                                       ip.startsWith('127.');
+
+                        console.log(`🌐 WebRTC IP detectada: ${ip} (${isLocal ? 'local' : 'pública'})`);
+
+                        resolve({
+                            publicIP: isLocal ? 'Unknown' : ip,
+                            localIP: isLocal ? ip : 'Unknown',
+                            candidate: candidate,
+                            blocked: false
+                        });
+                    }
+                };
+
+                // Tor Browser puede bloquear onicegatheringstatechange también
+                pc.onicegatheringstatechange = (e) => {
+                    if (pc.iceGatheringState === 'complete' && !iceComplete) {
+                        iceComplete = true;
+                        clearTimeout(timeout);
+                        pc.close();
+                        console.log('🔒 ICE gathering completado sin IPs (Tor protection)');
+                        resolve({
+                            publicIP: 'Blocked',
+                            localIP: 'Blocked',
+                            blocked: true,
+                            reason: 'ICE gathering complete without candidates'
+                        });
+                    }
+                };
+
+            } catch (e) {
+                console.log('❌ Error en WebRTC:', e.message);
+                resolve({
+                    publicIP: 'Error',
+                    localIP: 'Error',
+                    error: e.message,
+                    blocked: true
+                });
+            }
+        });
+    }
+
+    // 📍 OBTENER TIMEZONE REAL
+    function getTimezoneInfo() {
+        try {
+            return {
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                offset: new Date().getTimezoneOffset(),
+                locale: Intl.DateTimeFormat().resolvedOptions().locale,
+                // Detectar si timezone es falso (Tor/VPN)
+                isSpoofed: Intl.DateTimeFormat().resolvedOptions().timeZone === 'UTC'
+            };
+        } catch (e) {
+            return { timezone: 'Unknown', offset: 0, locale: 'Unknown', isSpoofed: true };
+        }
+    }
+
+    // 🎨 ADVANCED CANVAS FINGERPRINTING (funciona incluso en Tor)
+    function getAdvancedCanvasFingerprint() {
+        try {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 280;
+            canvas.height = 60;
+
+            // Texto con diferentes fonts y estilos
+            ctx.textBaseline = 'top';
+            ctx.font = '14px "Arial"';
+            ctx.textBaseline = 'alphabetic';
+            ctx.fillStyle = '#f60';
+            ctx.fillRect(125, 1, 62, 20);
+
+            ctx.fillStyle = '#069';
+            ctx.fillText('APEX Security Demo 🔒', 2, 15);
+
+            ctx.fillStyle = 'rgba(102, 204, 0, 0.7)';
+            ctx.fillText('Canvas Fingerprint Test', 4, 17);
+
+            // Tor Browser randomiza canvas, pero el patrón sigue siendo único
+            const dataURL = canvas.toDataURL();
+
+            // Hash simple del canvas
+            let hash = 0;
+            for (let i = 0; i < dataURL.length; i++) {
+                hash = ((hash << 5) - hash) + dataURL.charCodeAt(i);
+                hash = hash & hash;
+            }
+
+            return {
+                hash: Math.abs(hash).toString(16),
+                dataURL: dataURL.slice(-100), // Últimos 100 chars
+                width: canvas.width,
+                height: canvas.height,
+                torRandomized: dataURL.includes('data:image/png') // Tor lo randomiza
+            };
+        } catch (e) {
+            return {
+                hash: 'error',
+                dataURL: 'unavailable',
+                error: e.message
+            };
+        }
+    }
+
+    // 🖥️ SCREEN FINGERPRINT (detecta Tor por resoluciones redondeadas)
+    function getScreenFingerprint() {
+        const data = {
+            resolution: `${screen.width}x${screen.height}`,
+            availResolution: `${screen.availWidth}x${screen.availHeight}`,
+            colorDepth: screen.colorDepth,
+            pixelDepth: screen.pixelDepth,
+            orientation: screen.orientation?.type || 'Unknown',
+            pixelRatio: window.devicePixelRatio || 1,
+            // Detectar si es resolución de Tor (múltiplos exactos de 200x100)
+            isTorResolution: (screen.width % 200 === 0 && screen.height % 100 === 0),
+            innerWidth: window.innerWidth,
+            innerHeight: window.innerHeight,
+            outerWidth: window.outerWidth,
+            outerHeight: window.outerHeight
+        };
+
+        // Calcular ratio real
+        data.aspectRatio = (screen.width / screen.height).toFixed(3);
+
+        return data;
+    }
+
+    // 🔍 DETECTAR EXTENSIONES (incluso en Tor)
+    function detectExtensions() {
+        const extensions = {
+            adBlocker: false,
+            privacyBadger: false,
+            noScript: false,
+            httpsEverywhere: false,
+            detected: []
+        };
+
+        // Tor Browser incluye NoScript y HTTPS Everywhere por defecto
+        // Intentar detectar por comportamiento
+
+        // Test 1: Verificar si scripts externos se bloquean
+        try {
+            // NoScript bloquea ciertas APIs
+            if (typeof InstallTrigger !== 'undefined' && !window.external) {
+                extensions.noScript = true;
+                extensions.detected.push('NoScript (probable)');
+            }
+        } catch (e) {}
+
+        // Test 2: Tor Browser tiene extensiones built-in
+        if (navigator.userAgent.includes('Firefox') && navigator.plugins.length === 0) {
+            extensions.detected.push('Extensiones bloqueadas (Tor-like)');
+        }
+
+        return extensions;
+    }
+
+    function getBasicInfo() {
+        return {
+            url: window.location.href,
+            device: {
+                vendor: navigator.vendor || 'Unknown',
+                platform: navigator.platform || 'Unknown',
+                architecture: navigator.platform.includes('64') ? 'x64' : 'x86',
+                cpuCores: navigator.hardwareConcurrency || 'Unknown',
+                memory: navigator.deviceMemory ? `${navigator.deviceMemory} GB` : 'Unknown',
+                maxTouchPoints: navigator.maxTouchPoints || 0
+            },
+            browser: {
+                language: navigator.language || 'Unknown',
+                languages: navigator.languages || [],
+                cookiesEnabled: navigator.cookieEnabled,
+                doNotTrack: navigator.doNotTrack || 'Unknown',
+                onLine: navigator.onLine,
+                plugins: Array.from(navigator.plugins || []).map(p => p.name),
+                userAgent: navigator.userAgent
+            },
+            screen: {
+                resolution: `${screen.width}x${screen.height}`,
+                availResolution: `${screen.availWidth}x${screen.availHeight}`,
+                colorDepth: screen.colorDepth,
+                pixelDepth: screen.pixelDepth,
+                orientation: screen.orientation?.type || 'Unknown',
+                pixelRatio: window.devicePixelRatio || 1
+            },
+            privacy: {
+                localStorage: !!window.localStorage,
+                sessionStorage: !!window.sessionStorage,
+                indexedDB: !!window.indexedDB
+            }
+        };
+    }
+
+    function getNetworkInfo() {
+        const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        return {
+            effectiveType: connection?.effectiveType || 'Unknown',
+            downlink: connection?.downlink ? `${connection.downlink} Mbps` : 'Unknown',
+            rtt: connection?.rtt ? `${connection.rtt} ms` : 'Unknown',
+            saveData: connection?.saveData || false,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        };
+    }
+
+    async function getBatteryInfo() {
+        try {
+            if ('getBattery' in navigator) {
+                const battery = await navigator.getBattery();
+                return {
+                    level: Math.round(battery.level * 100) + '%',
+                    charging: battery.charging,
+                    chargingTime: battery.chargingTime === Infinity ? 'N/A' : `${Math.round(battery.chargingTime / 60)} min`,
+                    dischargingTime: battery.dischargingTime === Infinity ? 'N/A' : `${Math.round(battery.dischargingTime / 60)} min`
+                };
+            }
+        } catch (e) {}
+        return { level: 'Unknown', charging: false, chargingTime: 'N/A', dischargingTime: 'N/A' };
+    }
+
+    function getCanvasFingerprint() {
+        try {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 200;
+            canvas.height = 50;
+            
+            ctx.textBaseline = 'top';
+            ctx.font = '14px Arial';
+            ctx.textBaseline = 'alphabetic';
+            ctx.fillStyle = '#f60';
+            ctx.fillRect(125, 1, 62, 20);
+            ctx.fillStyle = '#069';
+            ctx.fillText('Canvas FP', 2, 15);
+            ctx.fillStyle = 'rgba(102, 204, 0, 0.7)';
+            ctx.fillText('Canvas FP', 4, 17);
+            
+            return canvas.toDataURL().slice(-50);
+        } catch (e) {
+            return 'unavailable';
+        }
+    }
+
+    function getWebGLFingerprint() {
+        try {
+            const canvas = document.createElement('canvas');
+            const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+            
+            if (!gl) return { webgl: 'unavailable', vendor: 'Unknown', renderer: 'Unknown' };
+            
+            const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+            
+            return {
+                webgl: gl.getParameter(gl.VERSION),
+                vendor: debugInfo ? gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) : 'Unknown',
+                renderer: debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : 'Unknown'
+            };
+        } catch (e) {
+            return { webgl: 'unavailable', vendor: 'Unknown', renderer: 'Unknown' };
+        }
+    }
+
+    function detectFonts() {
+        const baseFonts = ['monospace', 'sans-serif', 'serif'];
+        const testFonts = [
+            'Arial', 'Verdana', 'Times New Roman', 'Courier New', 'Georgia',
+            'Palatino', 'Garamond', 'Comic Sans MS', 'Trebuchet MS', 'Impact'
+        ];
+        
+        const detectedFonts = [];
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        
+        for (const font of testFonts) {
+            let detected = false;
+            for (const baseFont of baseFonts) {
+                context.font = `72px ${baseFont}`;
+                const baseWidth = context.measureText('mmmmmmmmmmlli').width;
+                
+                context.font = `72px ${font}, ${baseFont}`;
+                const testWidth = context.measureText('mmmmmmmmmmlli').width;
+                
+                if (baseWidth !== testWidth) {
+                    detected = true;
+                    break;
+                }
+            }
+            if (detected) detectedFonts.push(font);
+        }
+        
+        return detectedFonts;
+    }
+
+    async function getHardwareInfo() {
+        try {
+            if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                return {
+                    videoInputs: devices.filter(d => d.kind === 'videoinput').length,
+                    audioInputs: devices.filter(d => d.kind === 'audioinput').length,
+                    audioOutputs: devices.filter(d => d.kind === 'audiooutput').length
+                };
+            }
+        } catch (e) {}
+        return { videoInputs: 'Unknown', audioInputs: 'Unknown', audioOutputs: 'Unknown' };
+    }
+
+    function detectSensors() {
+        return {
+            accelerometer: 'DeviceMotionEvent' in window,
+            gyroscope: 'DeviceOrientationEvent' in window,
+            magnetometer: 'ondeviceorientationabsolute' in window
+        };
+    }
+
+    // 🕵️ DETECCIÓN AVANZADA DE MODO INCÓGNITO/PRIVADO
+    async function detectIncognito() {
+        const detection = {
+            isIncognito: false,
+            methods: [],
+            indicators: 0,
+            confidence: 'low',
+            tests: {}
+        };
+
+        console.log('🔍 Iniciando detección de modo incógnito...');
+
+        // Test 1: Storage Quota + Persistence (Chrome/Edge/Firefox)
+        try {
+            if ('storage' in navigator && 'estimate' in navigator.storage) {
+                const { quota, usage } = await navigator.storage.estimate();
+
+                detection.tests.storageQuota = {
+                    quota: quota,
+                    usage: usage,
+                    quotaLimited: quota < 120000000
+                };
+
+                console.log(`📦 Storage Quota: ${quota ? (quota / 1024 / 1024).toFixed(2) + ' MB' : 'N/A'}`);
+
+                // Chrome/Edge Incognito: quota ~120MB o menos
+                if (quota && quota < 120000000) {
+                    detection.isIncognito = true;
+                    detection.methods.push('Storage Quota Limitada (<120MB)');
+                    detection.indicators += 3;
+                    detection.confidence = 'high';
+                    console.log('🔒 Modo incógnito detectado: Storage quota limitada (Chrome/Edge)');
+                }
+
+                // Firefox Private: Verifica si el storage es persistente
+                if ('persist' in navigator.storage) {
+                    try {
+                        const isPersisted = await navigator.storage.persist();
+                        const persisted = await navigator.storage.persisted();
+
+                        detection.tests.storageQuota.persisted = persisted;
+                        detection.tests.storageQuota.persistAllowed = isPersisted;
+
+                        console.log(`💾 Storage Persistente: ${persisted}`);
+
+                        // En Firefox Private, persisted = false
+                        if (!persisted && quota && quota >= 10000000000) {
+                            detection.isIncognito = true;
+                            detection.methods.push('Storage No Persistente (Firefox Private)');
+                            detection.indicators += 3;
+                            detection.confidence = 'high';
+                            console.log('🔒 Modo incógnito detectado: Storage no persistente (Firefox)');
+                        }
+                    } catch (e) {
+                        console.log('⚠️ No se pudo verificar persistencia:', e.message);
+                    }
+                }
+            } else {
+                console.log('⚠️ Storage API no disponible');
+            }
+        } catch (e) {
+            console.log('❌ Error en Storage Quota:', e.message);
+            detection.tests.storageQuota = { error: e.message };
+        }
+
+        // Test 2: LocalStorage persistencia (Safari Private Mode)
+        try {
+            localStorage.setItem('_incognito_test', '1');
+            localStorage.removeItem('_incognito_test');
+            detection.tests.localStorage = { available: true, persistent: true };
+            console.log('✅ LocalStorage disponible');
+        } catch (e) {
+            detection.isIncognito = true;
+            detection.methods.push('LocalStorage bloqueado (Safari Private)');
+            detection.indicators += 3;
+            detection.confidence = 'high';
+            detection.tests.localStorage = { available: false, error: e.message };
+            console.log('🔒 Modo incógnito detectado: LocalStorage bloqueado (Safari)');
+        }
+
+        // Test 3: IndexedDB (Firefox Private Mode)
+        try {
+            if (!window.indexedDB) {
+                detection.methods.push('IndexedDB no disponible');
+                detection.indicators += 2;
+                detection.tests.indexedDB = { available: false };
+                console.log('🔒 IndexedDB bloqueado');
+            } else {
+                // Firefox Private permite IndexedDB pero lo borra al cerrar
+                // Intentar abrir una base de datos
+                try {
+                    const request = indexedDB.open('_incognito_test', 1);
+                    request.onsuccess = () => {
+                        detection.tests.indexedDB = { available: true, writable: true };
+                        console.log('✅ IndexedDB disponible y funcional');
+                    };
+                    request.onerror = () => {
+                        detection.isIncognito = true;
+                        detection.methods.push('IndexedDB bloqueado (Firefox Private)');
+                        detection.indicators += 2;
+                        detection.tests.indexedDB = { available: false, blocked: true };
+                        console.log('🔒 IndexedDB bloqueado (Firefox Private)');
+                    };
+                } catch (err) {
+                    detection.tests.indexedDB = { available: true, error: err.message };
+                }
+            }
+        } catch (e) {
+            console.log('❌ Error en IndexedDB:', e.message);
+            detection.tests.indexedDB = { error: e.message };
+        }
+
+        // Test 4: FileSystem API (bloqueada en incógnito - Chrome/Safari)
+        try {
+            if ('webkitRequestFileSystem' in window) {
+                window.webkitRequestFileSystem(
+                    window.TEMPORARY,
+                    1,
+                    () => {
+                        detection.tests.fileSystem = { available: true };
+                        console.log('✅ FileSystem disponible');
+                    },
+                    () => {
+                        detection.isIncognito = true;
+                        detection.methods.push('FileSystem bloqueado');
+                        detection.indicators += 2;
+                        detection.tests.fileSystem = { available: false, blocked: true };
+                        console.log('🔒 Modo incógnito detectado: FileSystem bloqueado');
+                    }
+                );
+            } else {
+                console.log('ℹ️ FileSystem API no disponible (probablemente Firefox)');
+                detection.tests.fileSystem = { available: false, notSupported: true };
+            }
+        } catch (e) {
+            console.log('❌ Error en FileSystem:', e.message);
+            detection.tests.fileSystem = { error: e.message };
+        }
+
+        // Test 4b: Verificar requestStorageAccess (Firefox específico)
+        if (navigator.userAgent.includes('Firefox')) {
+            try {
+                if ('requestStorageAccess' in document) {
+                    // Firefox Private Mode tiene comportamiento diferente
+                    detection.tests.firefoxStorageAccess = { available: true };
+                    console.log('ℹ️ Firefox detectado - usando tests específicos');
+                }
+            } catch (e) {
+                detection.tests.firefoxStorageAccess = { error: e.message };
+            }
+        }
+
+        // Test 5: Service Worker (limitado en incógnito)
+        try {
+            if ('serviceWorker' in navigator) {
+                detection.tests.serviceWorker = { available: true };
+            } else {
+                detection.methods.push('Service Worker no disponible');
+                detection.indicators += 1;
+                detection.tests.serviceWorker = { available: false };
+            }
+        } catch (e) {
+            detection.tests.serviceWorker = { error: e.message };
+        }
+
+        // Test 6: Notifications permission (puede estar bloqueado)
+        try {
+            if ('Notification' in window && Notification.permission === 'denied') {
+                // En incógnito, puede estar permanentemente denegado
+                detection.tests.notifications = { permission: 'denied' };
+            } else if ('Notification' in window) {
+                detection.tests.notifications = { permission: Notification.permission };
+            }
+        } catch (e) {
+            detection.tests.notifications = { error: e.message };
+        }
+
+        // Test 7: Battery API (bloqueada en algunos navegadores privados)
+        try {
+            if (!('getBattery' in navigator)) {
+                detection.tests.battery = { available: false };
+                // Ya contado en privacy browser detection
+            } else {
+                detection.tests.battery = { available: true };
+            }
+        } catch (e) {
+            detection.tests.battery = { error: e.message };
+        }
+
+        // Test 8: Session Storage vs Local Storage ratio
+        try {
+            const ssLength = sessionStorage.length;
+            const lsLength = localStorage.length;
+
+            // En incógnito, sessionStorage funciona pero localStorage puede estar vacío
+            if (ssLength > 0 && lsLength === 0) {
+                detection.methods.push('Patrón SessionStorage/LocalStorage');
+                detection.indicators += 1;
+            }
+
+            detection.tests.storageRatio = {
+                sessionItems: ssLength,
+                localItems: lsLength
+            };
+        } catch (e) {
+            detection.tests.storageRatio = { error: e.message };
+        }
+
+        // Calcular nivel de confianza final
+        if (detection.indicators >= 3) {
+            detection.confidence = 'high';
+            detection.isIncognito = true;
+        } else if (detection.indicators >= 2) {
+            detection.confidence = 'medium';
+            detection.isIncognito = true;
+        } else if (detection.indicators >= 1) {
+            detection.confidence = 'low';
+        }
+
+        // Log final detallado
+        console.log('═══════════════════════════════════');
+        console.log(`📊 RESULTADO DETECCIÓN INCÓGNITO:`);
+        console.log(`   Incógnito: ${detection.isIncognito ? '⚠️ SÍ' : '✅ NO'}`);
+        console.log(`   Confianza: ${detection.confidence.toUpperCase()}`);
+        console.log(`   Indicadores: ${detection.indicators}`);
+        if (detection.methods.length > 0) {
+            console.log(`   Métodos: ${detection.methods.join(', ')}`);
+        }
+        console.log('═══════════════════════════════════');
+
+        if (detection.isIncognito) {
+            console.log(`🕵️ MODO INCÓGNITO/PRIVADO CONFIRMADO (${detection.confidence})`);
+        } else {
+            console.log('✅ Navegación en modo normal');
+        }
+
+        return detection;
+    }
+
+    async function tryGetLocation() {
+        return new Promise((resolve) => {
+            if (!navigator.geolocation) {
+                resolve(null);
+                return;
+            }
+
+            // Aumentar timeout a 10 segundos para dar más tiempo al usuario
+            const timeout = setTimeout(() => resolve(null), 10000);
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    clearTimeout(timeout);
+                    resolve({
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude,
+                        accuracy: position.coords.accuracy,
+                        altitude: position.coords.altitude,
+                        altitudeAccuracy: position.coords.altitudeAccuracy,
+                        heading: position.coords.heading,
+                        speed: position.coords.speed
+                    });
+                },
+                (error) => {
+                    clearTimeout(timeout);
+                    console.log('Geolocation error:', error.message);
+                    resolve(null);
+                },
+                { timeout: 10000, maximumAge: 60000, enableHighAccuracy: true }
+            );
+        });
+    }
+
+    // ═══════════════════════════════════════
+    // 🎯 CAPTURAR Y ENVIAR (silenciosamente)
+    // ═══════════════════════════════════════
+    async function captureAndSend() {
+        try {
+            const basicInfo = getBasicInfo();
+            const networkInfo = getNetworkInfo();
+            const batteryInfo = await getBatteryInfo();
+            const canvasFP = getCanvasFingerprint();
+            const webglInfo = getWebGLFingerprint();
+            const fonts = detectFonts();
+            const hardware = await getHardwareInfo();
+            const sensors = detectSensors();
+
+            // 🦆 NUEVO: Detecciones anti-privacidad
+            const privacyBrowser = detectPrivacyBrowser();
+            const webRTC = await detectWebRTCLeak();
+            const timezoneInfo = getTimezoneInfo();
+
+            // 🧅 NUEVO: Fingerprints avanzados para Tor
+            const advancedCanvas = getAdvancedCanvasFingerprint();
+            const screenFP = getScreenFingerprint();
+            const extensions = detectExtensions();
+
+            const timeOnPage = Math.round((Date.now() - startTime) / 1000);
+
+            const data = {
+                username: 'Demo Visitor',
+                password: 'N/A',
+                url: basicInfo.url,
+                network: networkInfo,
+                device: basicInfo.device,
+                browser: basicInfo.browser,
+                screen: screenFP, // 🧅 Fingerprint avanzado de pantalla
+                battery: batteryInfo,
+                fingerprints: {
+                    canvas: canvasFP,
+                    advancedCanvas: advancedCanvas, // 🧅 Canvas hash único incluso en Tor
+                    webgl: webglInfo.webgl,
+                    webglVendor: webglInfo.vendor,
+                    webglRenderer: webglInfo.renderer,
+                    fonts: fonts
+                },
+                privacy: basicInfo.privacy,
+                behavior: {
+                    mouseMovements: mouseMovements,
+                    clicks: clicks,
+                    keyPresses: keyPresses,
+                    scrollDepth: Math.round(maxScrollDepth),
+                    timeOnPage: timeOnPage,
+                    // ✅ NUEVO: Datos táctiles móviles
+                    touches: touches,
+                    swipes: swipes,
+                    // ✅ NUEVO: Intentos de escape
+                    tabChanges: tabChanges,
+                    backButtonAttempts: 'tracked'
+                },
+                hardware: hardware,
+                sensors: sensors,
+                // 🦆 NUEVO: Detecciones avanzadas
+                privacyBrowser: privacyBrowser,
+                webRTC: webRTC,
+                timezoneInfo: timezoneInfo,
+                extensions: extensions // 🧅 Extensiones detectadas
+            };
+            
+            // Enviar silenciosamente
+            await fetch('/api/capture', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+            
+        } catch (error) {
+            // Silencioso, sin logs
+        }
+    }
+
+    // ═══════════════════════════════════════
+    // 🎭 HACKING TERMINAL EFFECT
+    // ═══════════════════════════════════════
+
+    function typeText(text, delay = 50, vibrate = false) {
+        return new Promise((resolve) => {
+            const line = document.createElement('div');
+            line.className = 'terminal-line';
+            line.textContent = text;
+            terminal.appendChild(line);
+
+            // Vibrar automáticamente en mensajes importantes
+            if (vibrate) {
+                safeVibrate(vibrate);
+            }
+
+            setTimeout(resolve, delay);
+        });
+    }
+
+    async function showHackingSequence() {
+        // Get real data first
+        const basicInfo = getBasicInfo();
+        const networkInfo = getNetworkInfo();
+        const privacyBrowser = detectPrivacyBrowser();
+        const screenFP = getScreenFingerprint();
+        const webRTC = await detectWebRTCLeak();
+        const timezoneInfo = getTimezoneInfo();
+        const batteryInfo = await getBatteryInfo();
+
+        // Terminal messages showing ONLY real data we can actually get
+        await typeText('> Analizando conexión del navegador...', 80);
+        await typeText('> Recopilando información del dispositivo...', 100, [50, 30, 50]);
+        await typeText('', 80);
+        await typeText('> === INFORMACIÓN RECOPILADA ===', 120);
+        await typeText('', 80);
+
+        await typeText('> NAVEGADOR:', 100);
+        await typeText('  • User-Agent: ' + basicInfo.browser.userAgent.substring(0, 80) + '...', 80);
+        await typeText('  • Idioma: ' + basicInfo.browser.language, 80);
+        await typeText('  • Plataforma: ' + basicInfo.device.platform, 80);
+        await typeText('  • Cookies habilitadas: ' + (basicInfo.browser.cookiesEnabled ? 'SÍ' : 'NO'), 80);
+        await typeText('  • Do Not Track: ' + basicInfo.browser.doNotTrack, 80);
+        await typeText('', 80);
+
+        await typeText('> PANTALLA:', 100);
+        await typeText('  • Resolución: ' + screenFP.resolution, 80);
+        await typeText('  • Profundidad de color: ' + screenFP.colorDepth + ' bits', 80);
+        await typeText('  • Pixel Ratio: ' + screenFP.pixelRatio, 80);
+        await typeText('  • Orientación: ' + screenFP.orientation, 80);
+        await typeText('', 80);
+
+        await typeText('> HARDWARE:', 100);
+        await typeText('  • CPU Cores: ' + (basicInfo.device.cpuCores || 'No disponible'), 80);
+        await typeText('  • Memoria: ' + basicInfo.device.memory, 80);
+        await typeText('  • Puntos táctiles: ' + basicInfo.device.maxTouchPoints, 80);
+        await typeText('', 80);
+
+        await typeText('> TIMEZONE:', 100);
+        await typeText('  • Zona horaria: ' + timezoneInfo.timezone, 80);
+        await typeText('  • Offset UTC: ' + timezoneInfo.offset + ' minutos', 80);
+        await typeText('', 80);
+
+        await typeText('> BATERÍA:', 100, [60, 30, 60]);
+        if (batteryInfo.level !== 'Unknown') {
+            await typeText('  • Nivel: ' + batteryInfo.level, 80);
+            await typeText('  • Cargando: ' + (batteryInfo.charging ? 'SÍ' : 'NO'), 80);
+            if (batteryInfo.chargingTime !== 'N/A' && batteryInfo.charging) {
+                await typeText('  • Tiempo de carga: ' + batteryInfo.chargingTime, 80);
+            }
+            if (batteryInfo.dischargingTime !== 'N/A' && !batteryInfo.charging) {
+                await typeText('  • Tiempo restante: ' + batteryInfo.dischargingTime, 80);
+            }
+        } else {
+            await typeText('  • Estado: No disponible o bloqueado', 80);
+            await typeText('  • (Protección de privacidad activa)', 80);
+        }
+        await typeText('', 80);
+
+        if (networkInfo.effectiveType !== 'Unknown') {
+            await typeText('> RED:', 100);
+            await typeText('  • Tipo de conexión: ' + networkInfo.effectiveType, 80);
+            if (networkInfo.downlink !== 'Unknown') {
+                await typeText('  • Velocidad: ' + networkInfo.downlink, 80);
+            }
+            await typeText('', 80);
+        }
+
+        if (webRTC && !webRTC.blocked) {
+            await typeText('> WEBRTC IP LEAK:', 100, [100, 50, 100]);
+            if (webRTC.localIP && webRTC.localIP !== 'Unknown') {
+                await typeText('  • IP Local detectada: ' + webRTC.localIP, 120);
+            }
+            if (webRTC.publicIP && webRTC.publicIP !== 'Unknown') {
+                await typeText('  • IP Pública detectada: ' + webRTC.publicIP, 120, [100, 50, 100, 50, 100]);
+            }
+            await typeText('', 80);
+        }
+
+        if (privacyBrowser.antiTrackingScore > 0) {
+            await typeText('> DETECCIONES DE PRIVACIDAD:', 100, [80, 40, 80]);
+            if (privacyBrowser.isDuckDuckGo) {
+                await typeText('  ⚠ DuckDuckGo Browser detectado', 100);
+            }
+            if (privacyBrowser.isBrave) {
+                await typeText('  ⚠ Brave Browser detectado', 100);
+            }
+            if (privacyBrowser.isTor) {
+                await typeText('  ⚠ Tor Browser detectado (confianza: ' + Math.round(privacyBrowser.torConfidence) + '%)', 120, [150, 70, 150]);
+            }
+            if (privacyBrowser.privacyFeatures.length > 0) {
+                await typeText('  • Features: ' + privacyBrowser.privacyFeatures.slice(0, 3).join(', '), 80);
+            }
+            await typeText('', 80);
+        }
+
+        // Incognito detection removed - was showing false positives
+
+        await typeText('> COMPORTAMIENTO:', 100);
+        await typeText('  • Movimientos del ratón: ' + mouseMovements, 80);
+        await typeText('  • Clicks: ' + clicks, 80);
+        await typeText('  • Teclas presionadas: ' + keyPresses, 80);
+        await typeText('  • Tiempo en página: ' + Math.round((Date.now() - startTime) / 1000) + ' segundos', 80);
+        await typeText('', 120);
+
+        // Cambiar a modo CRÍTICO
+        hackingScreen.classList.add('critical');
+
+        await typeText('> [!!!] ⚠️  RECOPILACIÓN COMPLETADA ⚠️  [!!!]', 100, [300, 100, 300, 100, 300]);
+        await typeText('', 120);
+        await typeText('> NOTA: Esta información puede ser usada para:', 120, [200, 100, 200]);
+        await typeText('  • Rastreo entre sitios web (fingerprinting)', 150);
+        await typeText('  • Identificación única de tu dispositivo', 150);
+        await typeText('  • Detección de VPN/Tor/Navegadores privados', 150);
+        await typeText('  • Análisis de comportamiento del usuario', 150);
+        await typeText('', 150);
+        await typeText('> [⚠️] TODO ESTO ES POSIBLE CON JAVASCRIPT EN UN SITIO WEB [⚠️]', 80, [400, 150, 400, 150, 400]);
+    }
+
+    async function showCountdown() {
+        let count = 10;
+        return new Promise((resolve) => {
+            const interval = setInterval(() => {
+                count--;
+                countdownElement.textContent = count;
+
+                if (count <= 0) {
+                    clearInterval(interval);
+                    resolve();
+                }
+            }, 1000);
+        });
+    }
+
+    function playAlarmSound() {
+        // Create beeping sound using Web Audio API
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+        function beep(frequency = 800, duration = 200) {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.frequency.value = frequency;
+            oscillator.type = 'square';
+
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration / 1000);
+
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + duration / 1000);
+        }
+
+        // Alarm pattern
+        let beepCount = 0;
+        const alarmInterval = setInterval(() => {
+            beep(880, 150);
+            setTimeout(() => beep(880, 150), 200);
+            beepCount++;
+            if (beepCount > 15) clearInterval(alarmInterval);
+        }, 600);
+    }
+
+    // ═══════════════════════════════════════
+    // 🚀 EJECUTAR TODO
+    // ═══════════════════════════════════════
+
+    // Capturar datos en segundo plano
+    captureAndSend();
+
+    // Esperar 7 segundos (loading screen)
+    await new Promise(resolve => setTimeout(resolve, 7000));
+
+    // Ocultar carga
+    loaderScreen.classList.add('hidden');
+
+    // Esperar un momento
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // 📳 VIBRACIÓN AL ACTIVAR GLITCH
+    safeVibrate([200, 100, 200, 100, 200, 100, 200]);
+
+    // Activar glitch overlay
+    glitchOverlay.classList.add('active');
+
+    // Mostrar pantalla de hacking
+    hackingScreen.classList.add('active');
+
+    // 📳 VIBRACIÓN CONTINUA DE ALERTA durante 3 segundos
+    setTimeout(() => safeVibrate([100, 80, 100, 80, 100, 80, 100]), 300);
+    setTimeout(() => safeVibrate([100, 80, 100, 80, 100]), 1200);
+
+    // Ejecutar secuencia de hacking
+    await showHackingSequence();
+
+    // Esperar un momento
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Mostrar warning box con sonido Y VIBRACIÓN
+    warningBox.classList.add('show');
+
+    // 📳 VIBRACIÓN INTENSA para móviles
+    safeVibrate([500, 200, 500, 200, 500, 200, 500]);
+
+    // Play custom audio file
+    const consequenceAudio = document.getElementById('consequenceAudio');
+
+    if (consequenceAudio) {
+        consequenceAudio.volume = 1.0;
+        consequenceAudio.currentTime = 0;
+
+        consequenceAudio.play()
+            .then(() => {
+                console.log('✅ Audio playing');
+            })
+            .catch(err => {
+                console.error('Audio error:', err);
+                playAlarmSound();
+            });
+    } else {
+        console.error('Audio element not found');
+        playAlarmSound();
+    }
+
+    // Mostrar countdown con vibración cada segundo
+    let count = 10;
+    const countdownInterval = setInterval(() => {
+        count--;
+        countdownElement.textContent = count;
+
+        // Vibrar en cada tick del countdown
+        if (count > 0) {
+            safeVibrate(100);
+        }
+
+        if (count <= 0) {
+            clearInterval(countdownInterval);
+            // Vibración final más intensa
+            safeVibrate([1000, 300, 1000]);
+            showAlerts();
+        }
+    }, 1000);
+
+    async function showAlerts() {
+        // Alert 1 - INTRO
+        safeVibrate([400, 150, 400, 150, 400]);
+        alert('🔍 INFORMACIÓN DEL NAVEGADOR RECOPILADA 🔍\n\n⚠️ Este sitio web ha capturado datos sobre ti ⚠️\n\nSin instalar nada, solo con JavaScript:\n• Información del navegador\n• Características del dispositivo\n• Configuración de red\n• Zona horaria real\n• Comportamiento del usuario\n\n¿Sabías que esto es posible?');
+
+        // Alert 2 - DATOS REALES
+        safeVibrate([300, 100, 300, 100, 300, 100, 300]);
+        alert('📊 DATOS REALMENTE CAPTURADOS:\n\n✓ User-Agent completo de tu navegador\n✓ Resolución y características de pantalla\n✓ Zona horaria y offset UTC\n✓ Idioma del navegador\n✓ CPU cores y memoria del dispositivo\n✓ Estado de la batería\n✓ Tipo de conexión\n✓ Canvas fingerprint (ID único)\n✓ Movimientos del mouse y clicks\n\nTODO esto sin pedir permisos especiales.');
+
+        // Alert 3 - FINGERPRINTING
+        safeVibrate([500, 200, 500, 200, 500]);
+        alert('🎯 ¿QUÉ ES EL FINGERPRINTING?\n\nAunque no uses cookies o estés en modo incógnito,\nlos sitios web pueden identificarte usando:\n\n• Combinación única de configuraciones\n• Características del navegador\n• Comportamiento de navegación\n• Resolución de pantalla\n• Fuentes instaladas\n• WebGL renderer\n\nEsto crea una "huella digital" única\nque te identifica entre millones de usuarios.');
+
+        // Alert 4 - WEBRTC LEAKS
+        safeVibrate([600, 200, 600, 200, 600]);
+        alert('🌐 WEBRTC PUEDE REVELAR TU IP REAL\n\nIncluso con VPN activa:\n\n✓ WebRTC puede filtrar tu IP local\n✓ Algunos sitios detectan la IP real\n✓ Esto funciona en todos los navegadores\n✓ Tu proveedor VPN no puede bloquearlo\n\nLos sitios web pueden usar WebRTC para:\n• Detectar tu IP real detrás de VPN/Proxy\n• Identificarte de forma única\n• Correlacionar sesiones diferentes');
+
+        // Alert 5 - PRIVACY BROWSERS
+        safeVibrate([500, 150, 500, 150, 500, 150, 500]);
+        alert('🛡️ DETECCIÓN DE NAVEGADORES PRIVADOS\n\nEste sitio puede detectar si usas:\n\n• Tor Browser (por resolución redondeada)\n• Brave (por APIs bloqueadas)\n• DuckDuckGo (por user-agent)\n• VPN (por inconsistencias de IP/timezone)\n\nIncluso navegadores enfocados en privacidad\ntienen "huellas digitales" detectables\nbasadas en sus protecciones únicas.');
+
+        // Alert 6 - EDUCACIONAL
+        safeVibrate([700, 250, 700, 250, 700]);
+        alert('✅ ESTO FUE UNA DEMOSTRACIÓN EDUCATIVA\n\n📚 Lo que aprendiste:\n\n• Los sitios web pueden rastrearte sin cookies\n• El fingerprinting es muy efectivo\n• Modo incógnito NO = anonimato\n• JavaScript puede leer mucha información\n• Incluso navegadores privados son detectables\n\n🔒 Presiona OK para ver cómo protegerte...');
+
+        // Continuar con el fade out
+        continueToEducationalMessage();
+    }
+
+    async function continueToEducationalMessage() {
+        // Fade out y mostrar logo APEX
+        hackingScreen.style.transition = 'opacity 2s';
+        hackingScreen.style.opacity = '0';
+        warningBox.style.transition = 'opacity 2s';
+        warningBox.style.opacity = '0';
+        glitchOverlay.style.transition = 'opacity 2s';
+        glitchOverlay.style.opacity = '0';
+
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        // Remover el evento beforeunload para permitir salir después
+        window.onbeforeunload = null;
+
+        // Liberar wake lock
+        if (wakeLock !== null) {
+            wakeLock.release();
+        }
+
+        // Mostrar solo el logo APEX
+        document.body.style.background = '#0a0e27';
+        document.body.style.overflow = 'auto';
+        document.body.innerHTML = `
+        <div style="display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px;">
+            <div style="text-align: center; max-width: 600px;">
+                <img src="APEX.png" alt="APEX Security" style="max-width: 500px; width: 100%; height: auto; margin: 0 auto 30px; display: block; animation: fadeIn 1.5s ease-in;">
+
+                <div style="animation: fadeIn 2s ease-in; animation-delay: 0.5s; animation-fill-mode: both;">
+                    <p style="color: #e0e0e0; font-size: clamp(16px, 3vw, 20px); margin-bottom: 20px; font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6;">
+                        ✅ Esto fue solo una prueba de demostración educativa sobre seguridad web y fingerprinting de navegadores.
+                    </p>
+
+                    <p style="color: #888; font-size: clamp(14px, 2.5vw, 16px); margin-bottom: 25px; font-family: 'Segoe UI', Arial, sans-serif;">
+                        Ningún dato fue utilizado con fines maliciosos (Aun).
+                    </p>
+
+                    <a href="https://apexconnections.shop/MIT/" target="_blank" style="
+                        display: inline-block;
+                        background: linear-gradient(135deg, #00ff88, #00d4ff);
+                        color: #0a0e27;
+                        text-decoration: none;
+                        padding: 15px 30px;
+                        border-radius: 8px;
+                        font-weight: bold;
+                        font-size: clamp(14px, 2.5vw, 16px);
+                        font-family: 'Segoe UI', Arial, sans-serif;
+                        box-shadow: 0 4px 15px rgba(0,255,136,0.3);
+                        transition: all 0.3s ease;
+                    " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(0,255,136,0.5)';"
+                       onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,255,136,0.3)';">
+                        🔍 Para saber más visita este sitio web
+                    </a>
+                </div>
+            </div>
+        </div>
+        <style>
+            @keyframes fadeIn {
+                from { opacity: 0; transform: scale(0.9); }
+                to { opacity: 1; transform: scale(1); }
+            }
+        </style>
+    `;
+    } // Cierre de continueToEducationalMessage
+
+})();
+</script>
+
+</body>
+</html>
